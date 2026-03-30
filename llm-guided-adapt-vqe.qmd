@@ -27,13 +27,13 @@ css: styles.css
 
 <div style="height: 2.5rem;"></div>
 
-This work builds directly on *Chemically Aware VQE: HF vs UCCSD-VQE vs ADAPT-VQE using CUDA-Q. It is also inspired by the collaboration between Hiverge and Quantinuum on AI-guided quantum algorithm discovery, presented at NVIDIA GTC 2026.
+This work builds directly on *Chemically Aware VQE: HF vs UCCSD-VQE vs ADAPT-VQE using CUDA-Q*. It is also inspired by the collaboration between Hiverge and Quantinuum on AI-guided quantum algorithm discovery, presented at NVIDIA GTC 2026.
 
-##Chemical reasoning meets quantum algorithms
+## Chemical reasoning meets quantum algorithms
 
-In the first notebook, we showed that ADAPT-VQE recovers essentially the same ground-state energy as UCCSD for methane — using only 4 operators instead of 8, and therefore a significantly shallower quantum circuit. The selection criterion was purely mathematical: at each iteration, ADAPT-VQE computes the energy gradient with respect to every operator in the pool and adds the one with the largest magnitude.
+In the first notebook, we showed that ADAPT-VQE recovers essentially the same ground-state energy as UCCSD for methane, using only 4 operators instead of 8, and therefore resulted in a significantly shallower quantum circuit. The selection criterion was purely mathematical: at each iteration, ADAPT-VQE computes the energy gradient with respect to every operator in the pool and adds the one with the largest magnitude.
 
-This raises a question at the intersection of quantum chemistry and agentic AI: could chemical reasoning — encoded in a large language model — make the same selection? For systems larger and more strongly correlated than methane, the operator pool grows rapidly and computing gradients for every operator at every iteration becomes the dominant computational cost. An LLM that reliably pre-selects the most important operators could reduce that cost significantly, without any additional simulation. This notebook tests whether that is possible, at least for a well-understood minimal system.
+ Current quantum devices are limited by noise, coherence time, and circuit depth, so making informed, structured choices about the ansatz is essential. Chemically aware constructions, such as ADAPT-VQE, implicitly encode physical insight to prioritise the most relevant excitations, reducing the number of parameters and the depth of the circuit without sacrificing accuracy.
 
 The experiment proceeds in four steps:
 
@@ -67,11 +67,11 @@ import os
 
 ## LLM-guided ADAPT-VQE using CUDA-Q
 
-This notebook uses the same molecular system as notebook one — methane (CH₄) in a minimal STO-3G basis, with a 2-electron, 3-orbital active space giving 6 qubits — and extends it by introducing an LLM in the operator selection loop. All Hamiltonians and reference states are identical to notebook one to ensure a fair and controlled comparison.
+This notebook uses the same molecular system as notebook one: methane (CH₄) in a minimal STO-3G basis, with a 2-electron, 3-orbital active space giving 6 qubits, and extends it by introducing an LLM in the operator selection loop to rank and pre-select excitation operators based on chemical reasoning. This introduces a layer of chemically informed bias into the otherwise purely gradient-driven ADAPT-VQE procedure, constraining the pool before running ADAPT-VQE. All Hamiltonians and reference states are identical to notebook one to ensure a fair and controlled comparison.
 
 ### Rebuilding the molecular system
 
-We begin by reconstructing the molecular Hamiltonian from the first notebook. The reference energies — HF at −39.726717 Ha and CASCI at −39.730452 Ha — define the same benchmarks as before.
+We begin by reconstructing the molecular Hamiltonian from the first notebook. The reference energies for HF (−39.726717 Ha) and CASCI (−39.730452) Ha will act as our benchmarks.
 
 ```{python}
 #| label: rebuild-molecule
@@ -112,7 +112,7 @@ E_casci = molecule.energies.get("R-CASCI")
 
 ### The operator pool and ADAPT-VQE
 
-We use the same `spin_complement_gsd` pool as before — generalised singles and doubles excitations that respect spin symmetry. The pool contains 32 operators for our 6-qubit system. Each operator corresponds to a specific electron excitation: single excitations move one electron from an occupied to a virtual orbital; double excitations move two simultaneously.
+We use the same `spin_complement_gsd` pool as before: generalised singles and doubles excitations that respect spin symmetry. The pool contains 32 operators for our 6-qubit system. Each operator corresponds to a specific electron excitation i.e. single excitations move one electron from an occupied to a virtual orbital, and double excitations move two simultaneously.
 
 ```{python}
 #| label: adapt-vqe
@@ -151,7 +151,45 @@ ADAPT-VQE converged to −39.730451 Ha using 4 operators, consistent with notebo
 
 ### Asking the LLM
 
-We pose the operator selection problem to Claude as a chemical reasoning task. The prompt describes the molecule, the active space, and the five operator types in the pool. We do not tell the model which operators ADAPT-VQE selected — the goal is to obtain an independent chemical ranking before seeing the gradient result.
+We pose the operator selection problem to Claude as a chemical reasoning task. The prompt provides a description of the molecule (methane in a minimal STO-3G basis), the active space definition, and the full set of excitation operators available in the ADAPT-VQE pool. The model does not see the ADAPT-VQE gradient results, and instead is asked to reason purely from chemical and physical principles. The goal is an independent chemical ranking of operator importance that can be compared directly to the gradient criterion, to compare how including chemical intuition aligns with the original ADAPT-VQE gradient criterion.
+
+The interaction is structured using a standard LLM chat format with a **system prompt** and a **user prompt**:
+
+- **The system prompt:** defines the model’s role and behavioural constraints. In this case, it instructs the model to act as an expert in quantum chemistry and to rely on physical and chemical intuition when reasoning about operator importance. It also enforces a strict output format (valid JSON only), ensuring the response can be programmatically parsed and used downstream in the workflow.
+
+- **The user prompt:** provides the actual scientific task. It specifies the molecular system, active space, reference state, and the available operator pool, and then asks the model to rank operator types by expected chemical importance. This prompt deliberately excludes any ADAPT-VQE gradient information so that the model’s output reflects an independent, chemistry-driven prior rather than the algorithm’s internal selection criteria.
+
+The geometry, basis set, and active space are not generated by the LLM but are standard quantum chemistry inputs obtained from classical electronic structure calculations and benchmark configurations - here we can generate them from PySCF and cudaq-solvers directly. Each operator in the spin_complement_gsd pool is represented as a Pauli string, and the excitation type can be inferred from the number of X and Y operators it contains: single excitations involve two such operators, double excitations involve four. This allows the molecular system, reference energies, and pool composition to be passed into the LLM prompt as computed quantities rather than hardcoded values.
+
+
+```{python}
+#| label: pool-summary
+#| echo: true
+#| eval: false
+
+# Generate prompt inputs directly from PySCF and cudaq-solvers outputs
+pool_strings = [str(op) for op in pool]
+singles = [s for s in pool_strings if s.count('Y') + s.count('X') == 2]
+doubles = [s for s in pool_strings if s.count('Y') + s.count('X') == 4]
+
+pool_summary = (
+    f"Pool composition ({len(pool)} operators total): "
+    f"{len(singles)} single excitations, {len(doubles)} double excitations"
+)
+```
+
+```
+Pool composition (32 operators total): 12 single excitations, 20 double excitations
+Name:      CH4
+Electrons: 2
+Orbitals:  3
+Qubits:    6
+HF:        -39.726717 Ha
+CASCI:     -39.730452 Ha
+Delta E:   3.73 mHa
+```
+
+We pose the operator selection problem to Claude as a chemical reasoning task using the Anthropic API. The model returns a ranked list of operator types with reasoning and confidence levels for each, which is parsed and used to filter the pool in the next section.
 
 ```{python}
 #| label: llm-prompt
@@ -163,32 +201,36 @@ When asked to reason about operator selection for VQE-type algorithms, you draw 
 and chemical intuition, not just mathematical criteria.
 Return your response as valid JSON only, with no additional text."""
 
-user_prompt = """We are running ADAPT-VQE on methane (CH4) in a minimal STO-3G basis.
+user_prompt = f"""We are running ADAPT-VQE on {name} in a minimal STO-3G basis.
 
-Active space: 2 electrons in 3 spatial orbitals (6 spin-orbitals / 6 qubits)
+Active space: {n_electrons} electrons in {molecule.n_orbitals} spatial orbitals \
+({n_qubits} spin-orbitals / {n_qubits} qubits)
 Reference state: Hartree-Fock (closed-shell singlet)
-Orbital occupancy: orbitals 0,1 occupied (HOMO α,β); orbitals 2,3,4,5 virtual
-Correlation energy to recover: approximately 3.7 mHa
+HF energy:    {E_hf:.6f} Ha
+CASCI energy: {E_casci:.6f} Ha
+Correlation energy to recover: {abs(E_casci - E_hf)*1000:.2f} mHa
 
-Operator types available (spin_complement_gsd pool):
-A. Single excitation (α-spin): one α electron from HOMO → LUMO
-B. Single excitation (β-spin): one β electron from HOMO → LUMO
-C. Double excitation (paired): both electrons (α,β) → same virtual orbital
-D. Double excitation (cross-spin): α and β → different virtual orbitals
+{pool_summary}
+
+Operator types within this pool:
+A. Single excitation (alpha-spin): one alpha electron from HOMO to LUMO
+B. Single excitation (beta-spin): one beta electron from HOMO to LUMO
+C. Double excitation (paired): both electrons (alpha, beta) to same virtual orbital
+D. Double excitation (cross-spin): alpha and beta to different virtual orbitals
 E. Double excitation (higher virtual): excitation to higher-lying virtual orbitals
 
-Rank these operator types A–E by expected chemical importance.
+Rank these operator types A-E by expected chemical importance.
 For each give: rank, physical reasoning, and confidence (high/medium/low).
 Also identify the dominant correlation effect.
 
 Return JSON only:
-{
+{{
   "dominant_correlation": "string",
   "operator_rankings": [
-    {"operator": "A", "rank": 1, "reasoning": "string", "confidence": "high"}
+    {{"operator": "A", "rank": 1, "reasoning": "string", "confidence": "high"}}
   ],
   "key_insight": "string"
-}"""
+}}"""
 
 client = anthropic.Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY"))
 
@@ -209,7 +251,30 @@ elif "```" in cleaned:
 llm_result = json.loads(cleaned)
 ```
 
-The model's response was chemically well-motivated. It correctly identified the paired double excitation (operator C) as dominant, citing the intra-pair correlation characteristic of a two-electron active space. It ranked single excitations last, invoking Brillouin's theorem: single excitations have zero first-order coupling to the closed-shell Hartree–Fock reference and therefore cannot appear as the first selected operator in an ADAPT-VQE run on a closed-shell singlet. This is the same physical reasoning that underpins CCSD theory.
+```
+Dominant correlation: Dynamic electron correlation via paired double excitation
+(HOMO->LUMO alpha+beta simultaneous), capturing the dominant left-right
+intra-pair correlation in the 2-electron active space.
+
+Key insight: For a 2-electron active space with a closed-shell HF reference,
+the electronic structure problem reduces to a generalised 2-electron CI. The
+dominant physics is captured by the paired double excitation (operator C),
+which directly encodes the HOMO²->LUMO² amplitude responsible for dynamic
+electron correlation between the two active electrons. Single excitations are
+rigorously suppressed at the HF reference by Brillouin's theorem, making them
+irrelevant at early ADAPT iterations. The 3.73 mHa correlation energy in this
+small active space is overwhelmingly attributable to operator C, with operators
+D and E providing secondary angular and higher-orbital corrections.
+
+Operator rankings:
+  Rank 1: C [high]   — Paired double excitation captures dominant intra-pair correlation
+  Rank 2: D [medium] — Cross-spin doubles provide secondary angular correlation
+  Rank 3: E [medium] — Higher virtual doubles give additional orbital corrections
+  Rank 4: A [high]   — Single alpha excitation suppressed by Brillouin's theorem
+  Rank 5: B [high]   — Single beta excitation equivalent to A by spin symmetry
+```
+
+The model's response was chemically well-motivated and consistent with coupled-cluster (CCSD) theory: operator C dominates, single excitations are correctly ruled out by Brillouin's theorem, and the secondary double excitations D and E provide angular and higher-orbital corrections. This output is used directly to filter the pool in the next section.
 
 ### The LLM-constrained pool
 
@@ -267,14 +332,14 @@ Table 1 extends the comparison from notebook one with the LLM-guided calculation
 
 | Method | Energy (Ha) | ΔE vs HF (mHa) | Parameters | Pool size |
 |---|---|---|---|---|
-| Hartree–Fock (HF) | −39.726717 | — | — | — |
+| Hartree–Fock (HF) | −39.726717 | - | - | - |
 | VQE (UCCSD) | −39.730448 | −3.731 | 8 | 32 |
-| ADAPT-VQE — full pool | −39.730451 | −3.735 | 4 | 32 |
-| ADAPT-VQE — LLM-guided | −39.730451 | −3.735 | 4 | 26 |
+| ADAPT-VQE | −39.730451 | −3.735 | 4 | 32 |
+| LLM-guided ADAPT-VQE | −39.730451 | −3.735 | 4 | 26 |
 
 <br>
 
-The LLM-guided calculation recovers the same energy as the full ADAPT-VQE run to within 0.0000 mHa — well within chemical accuracy (1 mHa) — while evaluating 19% fewer operators at each gradient step. The two runs selected the same operators in the same order.
+The LLM-guided calculation recovers the same energy as the full ADAPT-VQE run, while evaluating 19% fewer operators at each gradient step. The two runs selected the same operators in the same order.
 
 <div style="display: flex; justify-content: center; margin: 1.5rem 0;">
   <img src="figures/llm-guided-adapt-vqe/adapt_vqe_llm_comparison.png"
@@ -284,7 +349,7 @@ The LLM-guided calculation recovers the same energy as the full ADAPT-VQE run to
 <p class="figure-caption"><em>Figure 1. Convergence of full ADAPT-VQE (blue) and LLM-guided ADAPT-VQE (red dashed) for methane in STO-3G. Both reach the same converged energy. The CASCI reference (green dashed) and HF baseline (grey dashed) are shown for comparison.</em>
 </p>
 
-The result holds because the LLM correctly applied Brillouin's theorem to rule out single excitations as first-iteration candidates in a closed-shell singlet calculation. For well-understood systems, chemical reasoning can safely constrain the search space without loss of accuracy. For larger and more strongly correlated molecules — transition metal complexes, systems near bond-breaking geometries, cases where DFT fails — the dominant correlation effects are less obvious, and the LLM would need feedback from simulation to know when its reasoning was wrong. This is precisely the architecture that Hiverge's Hive implements at scale: LLM agents propose circuit modifications, GPU-accelerated simulation via CUDA-Q evaluates their fitness, and evolutionary selection retains the best. In its collaboration with Quantinuum on quantum chemistry problems, this loop rediscovered MP2 as an emergent strategy without being instructed to look for it. This notebook is one transparent iteration of that loop, at the smallest scale where the result is verifiable.
+The result holds because the LLM correctly applied Brillouin's theorem to rule out single excitations as first-iteration candidates in a closed-shell singlet calculation. For well-understood systems, chemical reasoning can safely constrain the search space without loss of accuracy. For larger and more strongly correlated molecules — transition metal complexes, systems near bond-breaking geometries, cases where DFT fails — the dominant correlation effects are less obvious, and the LLM would need feedback from simulation to know when its reasoning was wrong. This is precisely the architecture that Hiverge's Hive implements at scale: LLM agents propose circuit modifications, GPU-accelerated simulation via CUDA-Q evaluates their fitness, and evolutionary selection retains the best. In its collaboration with Quantinuum on quantum chemistry problems, this loop rediscovered MP2 as an emergent strategy without being instructed to look for it. 
 
 ---
 
