@@ -9,7 +9,7 @@
 <meta name="author" content="Maud Einhorn">
 <meta name="dcterms.date" content="2026-03-30">
 
-<title>Chemical reasoning meets quantum algorithms – Technical Blog</title>
+<title>LLM-guided ADAPT-VQE – Technical Blog</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -147,13 +147,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <h2 id="toc-title">On this page</h2>
    
   <ul>
-  <li><a href="#from-gradient-selection-to-chemical-reasoning" id="toc-from-gradient-selection-to-chemical-reasoning" class="nav-link active" data-scroll-target="#from-gradient-selection-to-chemical-reasoning">From gradient selection to chemical reasoning</a></li>
-  <li><a href="#llm-guided-adapt-vqe-using-cuda-q" id="toc-llm-guided-adapt-vqe-using-cuda-q" class="nav-link" data-scroll-target="#llm-guided-adapt-vqe-using-cuda-q">LLM-guided ADAPT-VQE using CUDA-Q</a>
+  <li><a href="#llm-guided-adapt-vqe-using-cuda-q" id="toc-llm-guided-adapt-vqe-using-cuda-q" class="nav-link active" data-scroll-target="#llm-guided-adapt-vqe-using-cuda-q">LLM-guided ADAPT-VQE using CUDA-Q</a>
   <ul class="collapse">
-  <li><a href="#rebuilding-the-system" id="toc-rebuilding-the-system" class="nav-link" data-scroll-target="#rebuilding-the-system">Rebuilding the system</a></li>
+  <li><a href="#rebuilding-the-molecular-system" id="toc-rebuilding-the-molecular-system" class="nav-link" data-scroll-target="#rebuilding-the-molecular-system">Rebuilding the molecular system</a></li>
   <li><a href="#the-operator-pool-and-adapt-vqe" id="toc-the-operator-pool-and-adapt-vqe" class="nav-link" data-scroll-target="#the-operator-pool-and-adapt-vqe">The operator pool and ADAPT-VQE</a></li>
   <li><a href="#asking-the-llm" id="toc-asking-the-llm" class="nav-link" data-scroll-target="#asking-the-llm">Asking the LLM</a></li>
-  <li><a href="#closing-the-loop-llm-constrained-pool" id="toc-closing-the-loop-llm-constrained-pool" class="nav-link" data-scroll-target="#closing-the-loop-llm-constrained-pool">Closing the loop: LLM-constrained pool</a></li>
+  <li><a href="#the-llm-constrained-pool" id="toc-the-llm-constrained-pool" class="nav-link" data-scroll-target="#the-llm-constrained-pool">The LLM-constrained pool</a></li>
   <li><a href="#results" id="toc-results" class="nav-link" data-scroll-target="#results">Results</a></li>
   </ul></li>
   </ul>
@@ -168,8 +167,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 <header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
-<div class="quarto-title-block"><div><h1 class="title">Chemical reasoning meets quantum algorithms</h1><button type="button" class="btn code-tools-button dropdown-toggle" id="quarto-code-tools-menu" data-bs-toggle="dropdown" aria-expanded="false"><i class="bi"></i> Code</button><ul class="dropdown-menu dropdown-menu-end" aria-labelelledby="quarto-code-tools-menu"><li><a id="quarto-show-all-code" class="dropdown-item" href="javascript:void(0)" role="button">Show All Code</a></li><li><a id="quarto-hide-all-code" class="dropdown-item" href="javascript:void(0)" role="button">Hide All Code</a></li><li><hr class="dropdown-divider"></li><li><a id="quarto-view-source" class="dropdown-item" href="javascript:void(0)" role="button">View Source</a></li></ul></div></div>
-<p class="subtitle lead">Can an LLM guide ansatz design? A CUDA-Q experiment</p>
+<div class="quarto-title-block"><div><h1 class="title">LLM-guided ADAPT-VQE</h1><button type="button" class="btn code-tools-button dropdown-toggle" id="quarto-code-tools-menu" data-bs-toggle="dropdown" aria-expanded="false"><i class="bi"></i> Code</button><ul class="dropdown-menu dropdown-menu-end" aria-labelelledby="quarto-code-tools-menu"><li><a id="quarto-show-all-code" class="dropdown-item" href="javascript:void(0)" role="button">Show All Code</a></li><li><a id="quarto-hide-all-code" class="dropdown-item" href="javascript:void(0)" role="button">Hide All Code</a></li><li><hr class="dropdown-divider"></li><li><a id="quarto-view-source" class="dropdown-item" href="javascript:void(0)" role="button">View Source</a></li></ul></div></div>
+<p class="subtitle lead">Using chemical reasoning to constrain operator selection in CUDA-Q</p>
 </div>
 
 
@@ -201,17 +200,16 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div style="height: 2.5rem;">
 
 </div>
-<p>This work builds directly on <em>Chemically Aware VQE: HF vs UCCSD-VQE vs ADAPT-VQE using CUDA-Q</em> (Einhorn, January 2026). It is also inspired by the collaboration between Hiverge and Quantinuum on AI-guided quantum algorithm discovery, presented at NVIDIA GTC 2026.</p>
-<section id="from-gradient-selection-to-chemical-reasoning" class="level2">
-<h2 class="anchored" data-anchor-id="from-gradient-selection-to-chemical-reasoning">From gradient selection to chemical reasoning</h2>
+<p>This work builds directly on *Chemically Aware VQE: HF vs UCCSD-VQE vs ADAPT-VQE using CUDA-Q. It is also inspired by the collaboration between Hiverge and Quantinuum on AI-guided quantum algorithm discovery, presented at NVIDIA GTC 2026.</p>
+<p>##Chemical reasoning meets quantum algorithms</p>
 <p>In the first notebook, we showed that ADAPT-VQE recovers essentially the same ground-state energy as UCCSD for methane — using only 4 operators instead of 8, and therefore a significantly shallower quantum circuit. The selection criterion was purely mathematical: at each iteration, ADAPT-VQE computes the energy gradient with respect to every operator in the pool and adds the one with the largest magnitude.</p>
 <p>This raises a question at the intersection of quantum chemistry and agentic AI: could chemical reasoning — encoded in a large language model — make the same selection? For systems larger and more strongly correlated than methane, the operator pool grows rapidly and computing gradients for every operator at every iteration becomes the dominant computational cost. An LLM that reliably pre-selects the most important operators could reduce that cost significantly, without any additional simulation. This notebook tests whether that is possible, at least for a well-understood minimal system.</p>
 <p>The experiment proceeds in four steps:</p>
 <ul>
-<li><strong>Rebuild the system</strong> — identical setup to notebook one, ensuring a controlled comparison</li>
+<li><strong>Rebuilding the molecular system</strong> — identical setup to notebook one, ensuring a controlled comparison</li>
 <li><strong>Run ADAPT-VQE</strong> — record which operators were selected and their optimised parameters</li>
 <li><strong>Ask an LLM</strong> — given the operator pool and molecular context, ask Claude to rank operators by expected chemical importance, <em>before</em> seeing the ADAPT-VQE result</li>
-<li><strong>Close the loop</strong> — run ADAPT-VQE again within the LLM-constrained pool and compare the energies</li>
+<li><strong>LLM-guided ADAPT-VQE</strong> — run ADAPT-VQE again within the LLM-constrained pool and compare the energies</li>
 </ul>
 <div class="callout callout-style-default callout-note callout-titled">
 <div class="callout-header d-flex align-content-center">
@@ -240,12 +238,11 @@ Note
 <span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> os</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 </div>
-</section>
 <section id="llm-guided-adapt-vqe-using-cuda-q" class="level2">
 <h2 class="anchored" data-anchor-id="llm-guided-adapt-vqe-using-cuda-q">LLM-guided ADAPT-VQE using CUDA-Q</h2>
 <p>This notebook uses the same molecular system as notebook one — methane (CH₄) in a minimal STO-3G basis, with a 2-electron, 3-orbital active space giving 6 qubits — and extends it by introducing an LLM in the operator selection loop. All Hamiltonians and reference states are identical to notebook one to ensure a fair and controlled comparison.</p>
-<section id="rebuilding-the-system" class="level3">
-<h3 class="anchored" data-anchor-id="rebuilding-the-system">Rebuilding the system</h3>
+<section id="rebuilding-the-molecular-system" class="level3">
+<h3 class="anchored" data-anchor-id="rebuilding-the-molecular-system">Rebuilding the molecular system</h3>
 <p>We begin by reconstructing the molecular Hamiltonian from the first notebook. The reference energies — HF at −39.726717 Ha and CASCI at −39.730452 Ha — define the same benchmarks as before.</p>
 <div id="rebuild-molecule" class="cell" data-execution_count="2">
 <details open="" class="code-fold">
@@ -378,8 +375,8 @@ Note
 </div>
 <p>The model’s response was chemically well-motivated. It correctly identified the paired double excitation (operator C) as dominant, citing the intra-pair correlation characteristic of a two-electron active space. It ranked single excitations last, invoking Brillouin’s theorem: single excitations have zero first-order coupling to the closed-shell Hartree–Fock reference and therefore cannot appear as the first selected operator in an ADAPT-VQE run on a closed-shell singlet. This is the same physical reasoning that underpins CCSD theory.</p>
 </section>
-<section id="closing-the-loop-llm-constrained-pool" class="level3">
-<h3 class="anchored" data-anchor-id="closing-the-loop-llm-constrained-pool">Closing the loop: LLM-constrained pool</h3>
+<section id="the-llm-constrained-pool" class="level3">
+<h3 class="anchored" data-anchor-id="the-llm-constrained-pool">The LLM-constrained pool</h3>
 <p>We use the LLM’s ranking to construct a constrained pool, retaining only the top three ranked operator types (C, D, E — the double excitations) and removing the single excitations it ranked last with high confidence.</p>
 <div id="constrained-pool" class="cell" data-execution_count="5">
 <details open="" class="code-fold">
@@ -938,8 +935,8 @@ Note
   });
   </script><div class="modal fade" id="quarto-embedded-source-code-modal" tabindex="-1" aria-labelledby="quarto-embedded-source-code-modal-label" aria-hidden="true"><div class="modal-dialog modal-dialog-scrollable"><div class="modal-content"><div class="modal-header"><h5 class="modal-title" id="quarto-embedded-source-code-modal-label">Source Code</h5><button class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><div class="">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8" data-shortcodes="false"><pre class="sourceCode markdown code-with-copy"><code class="sourceCode markdown"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="co">---</span></span>
-<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="an">title:</span><span class="co"> "Chemical reasoning meets quantum algorithms"</span></span>
-<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="an">subtitle:</span><span class="co"> "Can an LLM guide ansatz design? A CUDA-Q experiment"</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="an">title:</span><span class="co"> "LLM-guided ADAPT-VQE"</span></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="an">subtitle:</span><span class="co"> "Using chemical reasoning to constrain operator selection in CUDA-Q"</span></span>
 <span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a><span class="an">author:</span><span class="co"> "Maud Einhorn"</span></span>
 <span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a><span class="an">date:</span><span class="co"> last-modified</span></span>
 <span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a></span>
@@ -966,9 +963,9 @@ Note
 <span id="cb8-27"><a href="#cb8-27" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb8-28"><a href="#cb8-28" aria-hidden="true" tabindex="-1"></a><span class="dt">&lt;</span><span class="kw">div</span><span class="ot"> style</span><span class="op">=</span><span class="st">"height: 2.5rem;"</span><span class="dt">&gt;&lt;/</span><span class="kw">div</span><span class="dt">&gt;</span></span>
 <span id="cb8-29"><a href="#cb8-29" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-30"><a href="#cb8-30" aria-hidden="true" tabindex="-1"></a>This work builds directly on *Chemically Aware VQE: HF vs UCCSD-VQE vs ADAPT-VQE using CUDA-Q* (Einhorn, January 2026). It is also inspired by the collaboration between Hiverge and Quantinuum on AI-guided quantum algorithm discovery, presented at NVIDIA GTC 2026.</span>
+<span id="cb8-30"><a href="#cb8-30" aria-hidden="true" tabindex="-1"></a>This work builds directly on *Chemically Aware VQE: HF vs UCCSD-VQE vs ADAPT-VQE using CUDA-Q. It is also inspired by the collaboration between Hiverge and Quantinuum on AI-guided quantum algorithm discovery, presented at NVIDIA GTC 2026.</span>
 <span id="cb8-31"><a href="#cb8-31" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-32"><a href="#cb8-32" aria-hidden="true" tabindex="-1"></a><span class="fu">## From gradient selection to chemical reasoning</span></span>
+<span id="cb8-32"><a href="#cb8-32" aria-hidden="true" tabindex="-1"></a>##Chemical reasoning meets quantum algorithms</span>
 <span id="cb8-33"><a href="#cb8-33" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb8-34"><a href="#cb8-34" aria-hidden="true" tabindex="-1"></a>In the first notebook, we showed that ADAPT-VQE recovers essentially the same ground-state energy as UCCSD for methane — using only 4 operators instead of 8, and therefore a significantly shallower quantum circuit. The selection criterion was purely mathematical: at each iteration, ADAPT-VQE computes the energy gradient with respect to every operator in the pool and adds the one with the largest magnitude.</span>
 <span id="cb8-35"><a href="#cb8-35" aria-hidden="true" tabindex="-1"></a></span>
@@ -976,10 +973,10 @@ Note
 <span id="cb8-37"><a href="#cb8-37" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb8-38"><a href="#cb8-38" aria-hidden="true" tabindex="-1"></a>The experiment proceeds in four steps:</span>
 <span id="cb8-39"><a href="#cb8-39" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-40"><a href="#cb8-40" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>**Rebuild the system** — identical setup to notebook one, ensuring a controlled comparison</span>
+<span id="cb8-40"><a href="#cb8-40" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>**Rebuilding the molecular system** — identical setup to notebook one, ensuring a controlled comparison</span>
 <span id="cb8-41"><a href="#cb8-41" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>**Run ADAPT-VQE** — record which operators were selected and their optimised parameters</span>
 <span id="cb8-42"><a href="#cb8-42" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>**Ask an LLM** — given the operator pool and molecular context, ask Claude to rank operators by expected chemical importance, *before* seeing the ADAPT-VQE result</span>
-<span id="cb8-43"><a href="#cb8-43" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>**Close the loop** — run ADAPT-VQE again within the LLM-constrained pool and compare the energies</span>
+<span id="cb8-43"><a href="#cb8-43" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>**LLM-guided ADAPT-VQE** — run ADAPT-VQE again within the LLM-constrained pool and compare the energies</span>
 <span id="cb8-44"><a href="#cb8-44" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb8-45"><a href="#cb8-45" aria-hidden="true" tabindex="-1"></a>::: {.callout-note}</span>
 <span id="cb8-46"><a href="#cb8-46" aria-hidden="true" tabindex="-1"></a>To run this notebook, install dependencies with:</span>
@@ -1008,7 +1005,7 @@ Note
 <span id="cb8-71"><a href="#cb8-71" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb8-72"><a href="#cb8-72" aria-hidden="true" tabindex="-1"></a>This notebook uses the same molecular system as notebook one — methane (CH₄) in a minimal STO-3G basis, with a 2-electron, 3-orbital active space giving 6 qubits — and extends it by introducing an LLM in the operator selection loop. All Hamiltonians and reference states are identical to notebook one to ensure a fair and controlled comparison.</span>
 <span id="cb8-73"><a href="#cb8-73" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-74"><a href="#cb8-74" aria-hidden="true" tabindex="-1"></a><span class="fu">### Rebuilding the system</span></span>
+<span id="cb8-74"><a href="#cb8-74" aria-hidden="true" tabindex="-1"></a><span class="fu">### Rebuilding the molecular system</span></span>
 <span id="cb8-75"><a href="#cb8-75" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb8-76"><a href="#cb8-76" aria-hidden="true" tabindex="-1"></a>We begin by reconstructing the molecular Hamiltonian from the first notebook. The reference energies — HF at −39.726717 Ha and CASCI at −39.730452 Ha — define the same benchmarks as before.</span>
 <span id="cb8-77"><a href="#cb8-77" aria-hidden="true" tabindex="-1"></a></span>
@@ -1150,7 +1147,7 @@ Note
 <span id="cb8-219"><a href="#cb8-219" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb8-220"><a href="#cb8-220" aria-hidden="true" tabindex="-1"></a>The model's response was chemically well-motivated. It correctly identified the paired double excitation (operator C) as dominant, citing the intra-pair correlation characteristic of a two-electron active space. It ranked single excitations last, invoking Brillouin's theorem: single excitations have zero first-order coupling to the closed-shell Hartree–Fock reference and therefore cannot appear as the first selected operator in an ADAPT-VQE run on a closed-shell singlet. This is the same physical reasoning that underpins CCSD theory.</span>
 <span id="cb8-221"><a href="#cb8-221" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-222"><a href="#cb8-222" aria-hidden="true" tabindex="-1"></a><span class="fu">### Closing the loop: LLM-constrained pool</span></span>
+<span id="cb8-222"><a href="#cb8-222" aria-hidden="true" tabindex="-1"></a><span class="fu">### The LLM-constrained pool</span></span>
 <span id="cb8-223"><a href="#cb8-223" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb8-224"><a href="#cb8-224" aria-hidden="true" tabindex="-1"></a>We use the LLM's ranking to construct a constrained pool, retaining only the top three ranked operator types (C, D, E — the double excitations) and removing the single excitations it ranked last with high confidence.</span>
 <span id="cb8-225"><a href="#cb8-225" aria-hidden="true" tabindex="-1"></a></span>
