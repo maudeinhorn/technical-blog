@@ -1,0 +1,330 @@
+---
+title: "Chemical reasoning meets quantum algorithms"
+subtitle: "Can an LLM guide ansatz design? A CUDA-Q experiment"
+author: "Maud Einhorn"
+date: last-modified
+
+format:
+  html:
+    theme: cerulean
+    toc: true
+    toc-depth: 3
+    toc-location: left
+    number-sections: false
+    smooth-scroll: true
+    code-fold: show
+    code-tools: true
+    highlight-style: github
+    anchor-sections: true
+    page-layout: full
+    grid:
+      sidebar-width: 300px
+      body-width: 700px
+      margin-width: 300px
+    page-navigation: true
+css: styles.css
+---
+
+<div style="height: 2.5rem;"></div>
+
+This work builds directly on *Chemically Aware VQE: HF vs UCCSD-VQE vs ADAPT-VQE using CUDA-Q* (Einhorn, January 2026). It is also inspired by the collaboration between Hiverge and Quantinuum on AI-guided quantum algorithm discovery, presented at NVIDIA GTC 2026, and by the broader question of how large language models might assist in quantum circuit design.
+
+## From gradient selection to chemical reasoning
+
+In the first notebook, we showed that ADAPT-VQE recovers essentially the same ground-state energy as UCCSD for methane — using only **4 operators** instead of 8, and therefore a significantly shallower quantum circuit. The selection criterion was purely mathematical: at each iteration, ADAPT-VQE computes the energy gradient with respect to every operator in the pool and adds the one with the largest magnitude.
+
+This raises a question that sits at the intersection of quantum chemistry and the current wave of agentic AI: **could chemical reasoning — encoded in a large language model — make the same selection?** And if so, what does that tell us about the path toward AI-assisted quantum algorithm design?
+
+The question matters beyond this molecule. For systems larger and more strongly correlated than methane, the operator pool grows rapidly and computing gradients for every operator at every iteration becomes the dominant computational cost. An LLM that reliably pre-selects the most important operators could reduce that cost significantly — without any additional simulation. This notebook tests whether that is possible, at least for a well-understood minimal system.
+
+This notebook explores that question in four steps:
+
+- **Rebuild the system** — identical setup to notebook one, ensuring a controlled comparison
+- **Run ADAPT-VQE** — record which operators were selected and their optimised parameters
+- **Ask an LLM** — given the operator pool and molecular context, ask Claude to rank operators by expected chemical importance, *before* seeing the ADAPT-VQE result
+- **Close the loop** — run ADAPT-VQE again within the LLM-constrained pool and compare the energies
+
+::: {.callout-note}
+To run this notebook, install dependencies with:
+
+```bash
+pip install cudaq cudaq-solvers anthropic
+```
+
+An Anthropic API key is required for Section 3. Set it as the environment variable `ANTHROPIC_API_KEY`.
+:::
+
+```{python}
+#| label: imports
+#| echo: true
+#| eval: false
+
+import cudaq
+import cudaq_solvers as solvers
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import anthropic
+import json
+import os
+```
+
+## Rebuilding the system
+
+We begin by reconstructing the same molecular system and Hamiltonian from the first notebook — methane (CH₄) in a minimal STO-3G basis, with a 2-electron, 3-orbital active space giving 6 qubits. All parameters are identical to notebook one to ensure a fair and controlled comparison.
+
+```{python}
+#| label: rebuild-molecule
+#| echo: true
+#| eval: false
+
+name = "CH4"
+
+atoms = [
+    ["C",  0.0000,  0.0000,  0.0000],
+    ["H",  0.6291,  0.6291,  0.6291],
+    ["H", -0.6291, -0.6291,  0.6291],
+    ["H", -0.6291,  0.6291, -0.6291],
+    ["H",  0.6291, -0.6291, -0.6291],
+]
+
+geometry = [(e, (x, y, z)) for e, x, y, z in atoms]
+
+molecule = solvers.create_molecule(
+    geometry,
+    "sto-3g",
+    0,   # total spin 2S
+    0,   # charge
+    nele_cas=2,
+    norb_cas=3,
+    casci=True,
+    verbose=False
+)
+
+H           = molecule.hamiltonian
+n_qubits    = 2 * molecule.n_orbitals
+n_electrons = molecule.n_electrons
+spin_2S     = 0
+
+E_hf    = molecule.energies.get("hf_energy")
+E_casci = molecule.energies.get("R-CASCI")
+```
+
+The reference energies are unchanged from notebook one: HF at −39.726717 Ha and CASCI at −39.730452 Ha, giving a correlation energy of 3.73 mHa to recover.
+
+## The operator pool and ADAPT-VQE
+
+ADAPT-VQE selects operators from a predefined pool. We use the same `spin_complement_gsd` pool as before — generalised singles and doubles excitations that respect spin symmetry. The pool contains **32 operators** for our 6-qubit system.
+
+Each operator corresponds to a specific electron excitation. In a Jordan–Wigner mapping with 6 spin-orbitals, orbitals 0 and 1 are occupied (α and β spin of the HOMO) and orbitals 2–5 are virtual. The operator types in the pool therefore fall into two broad classes: **single excitations**, which move one electron from an occupied to a virtual orbital, and **double excitations**, which move two electrons simultaneously.
+
+```{python}
+#| label: adapt-vqe
+#| echo: true
+#| eval: false
+
+pool = solvers.get_operator_pool(
+    "spin_complement_gsd",
+    num_orbitals=molecule.n_orbitals
+)
+
+@cudaq.kernel
+def init_state(q: cudaq.qview):
+    for i in range(n_electrons):
+        x(q[i])
+
+E_adapt, thetas_adapt, ops_adapt = solvers.adapt_vqe(
+    init_state,
+    H,
+    pool,
+    max_iterations=4,
+    grad_norm_tol=1e-3
+)
+
+# Record selected operators
+selected_ops_info = []
+for i, (op, theta) in enumerate(zip(ops_adapt, thetas_adapt)):
+    selected_ops_info.append({
+        "iteration": i + 1,
+        "operator": str(op),
+        "theta_optimised": float(theta),
+        "abs_theta": abs(float(theta)),
+    })
+```
+
+ADAPT-VQE converged to −39.730451 Ha using 4 operators — consistent with notebook one. The optimised parameter magnitudes |θ| reflect each operator's contribution to the correlated wavefunction: larger values indicate operators that carry more correlation weight.
+
+## Asking the LLM
+
+We now pose the operator selection problem to Claude as a chemical reasoning task. The prompt describes the molecule, the active space, and the five operator types available in the pool. Critically, we do **not** tell the model which operators ADAPT-VQE selected. We ask it to reason from chemistry alone: given what you know about electron correlation in a small, weakly correlated closed-shell molecule, which excitation types would you expect to matter most?
+
+```{python}
+#| label: llm-prompt
+#| echo: true
+#| eval: false
+
+system_prompt = """You are an expert in quantum chemistry and molecular electronic structure.
+When asked to reason about operator selection for VQE-type algorithms, you draw on physical
+and chemical intuition, not just mathematical criteria.
+Return your response as valid JSON only, with no additional text."""
+
+user_prompt = """We are running ADAPT-VQE on methane (CH4) in a minimal STO-3G basis.
+
+Active space: 2 electrons in 3 spatial orbitals (6 spin-orbitals / 6 qubits)
+Reference state: Hartree-Fock (closed-shell singlet)
+Orbital occupancy: orbitals 0,1 occupied (HOMO α,β); orbitals 2,3,4,5 virtual
+Correlation energy to recover: approximately 3.7 mHa
+
+Operator types available (spin_complement_gsd pool):
+A. Single excitation (α-spin): one α electron from HOMO → LUMO
+B. Single excitation (β-spin): one β electron from HOMO → LUMO
+C. Double excitation (paired): both electrons (α,β) → same virtual orbital
+D. Double excitation (cross-spin): α and β → different virtual orbitals
+E. Double excitation (higher virtual): excitation to higher-lying virtual orbitals
+
+Rank these operator types A–E by expected chemical importance.
+For each give: rank, physical reasoning, and confidence (high/medium/low).
+Also identify the dominant correlation effect.
+
+Return JSON only:
+{
+  "dominant_correlation": "string",
+  "operator_rankings": [
+    {"operator": "A", "rank": 1, "reasoning": "string", "confidence": "high"}
+  ],
+  "key_insight": "string"
+}"""
+
+client = anthropic.Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY"))
+
+response = client.messages.create(
+    model="claude-sonnet-4-6",
+    max_tokens=2048,
+    system=system_prompt,
+    messages=[{"role": "user", "content": user_prompt}]
+)
+
+raw_response = response.content[0].text
+cleaned = raw_response.strip()
+if "```json" in cleaned:
+    cleaned = cleaned.split("```json")[1].split("```")[0].strip()
+elif "```" in cleaned:
+    cleaned = cleaned.split("```")[1].split("```")[0].strip()
+
+llm_result = json.loads(cleaned)
+```
+
+The model's response was precise and chemically well-motivated. It correctly identified the **paired double excitation (operator C)** as dominant, citing the intra-pair (left-right) correlation characteristic of a two-electron active space. It ranked single excitations last, invoking Brillouin's theorem: single excitations have zero first-order coupling to the closed-shell Hartree–Fock reference, and therefore cannot appear as the first selected operator in an ADAPT-VQE run on a closed-shell singlet.
+
+The LLM's key insight:
+
+> *"In a closed-shell singlet active space, the paired double excitation (operator C) dominates because it directly captures intra-pair correlation with the largest off-diagonal Hamiltonian matrix element with the HF reference."*
+
+This is the same physical reasoning that underpins CCSD theory. The model was not guessing — it was applying a well-established result from coupled-cluster theory to constrain the search.
+
+## Closing the loop: LLM-guided ADAPT-VQE
+
+We now use the LLM's ranking to construct a constrained operator pool and run ADAPT-VQE within it. We retain only operators belonging to the LLM's top three ranked types (C, D, E — the double excitations), filtering out the single excitations it ranked last with high confidence.
+
+```{python}
+#| label: constrained-pool
+#| echo: true
+#| eval: false
+
+# Approximate index ranges for operator types in spin_complement_gsd (6 qubits)
+n_singles = n_qubits
+n_doubles = len(pool) - n_singles
+
+operator_type_map = {
+    "A": list(range(0, n_singles // 2)),
+    "B": list(range(n_singles // 2, n_singles)),
+    "C": list(range(n_singles, n_singles + n_doubles // 2)),
+    "D": list(range(n_singles + n_doubles // 2, len(pool))),
+    "E": list(range(n_singles + n_doubles // 2, len(pool))),
+}
+
+top_n = 3
+top_operator_types = [
+    op['operator'] for op in
+    sorted(llm_result['operator_rankings'], key=lambda x: x['rank'])[:top_n]
+]
+
+llm_pool_indices = sorted(set(
+    idx for op_type in top_operator_types
+    for idx in operator_type_map.get(op_type, [])
+))
+
+llm_constrained_pool = [pool[i] for i in llm_pool_indices if i < len(pool)]
+```
+
+This reduced the pool from **32 to 26 operators** — a 19% reduction — by removing the single-excitation operators the LLM ranked last. We then ran ADAPT-VQE with identical settings within this constrained pool.
+
+```{python}
+#| label: llm-guided-adapt
+#| echo: true
+#| eval: false
+
+E_llm_adapt, thetas_llm_adapt, ops_llm_adapt = solvers.adapt_vqe(
+    init_state,
+    H,
+    llm_constrained_pool,
+    max_iterations=4,
+    grad_norm_tol=1e-3
+)
+```
+
+## Results
+
+Table 1 extends the results from notebook one with the LLM-guided calculation.
+
+| Method | Energy (Ha) | ΔE vs HF (mHa) | Parameters | Pool size |
+|---|---|---|---|---|
+| Hartree–Fock (HF) | −39.726717 | — | — | — |
+| VQE (UCCSD) | −39.730448 | −3.731 | 8 | 32 (all) |
+| ADAPT-VQE — full pool | −39.730451 | −3.735 | 4 | 32 |
+| ADAPT-VQE — LLM-guided | −39.730451 | −3.735 | 4 | 26 |
+
+The LLM-guided calculation recovers the same energy as the full ADAPT-VQE run to within **0.0000 mHa** — well within chemical accuracy (1 mHa) — while evaluating **19% fewer operators** at each gradient step. The two runs selected the same operators in the same order.
+
+<div style="display: flex; justify-content: center; margin: 1.5rem 0;">
+  <img src="figures/llm-guided-adapt-vqe/adapt_vqe_llm_comparison.png"
+       alt="Full ADAPT-VQE vs LLM-guided ADAPT-VQE convergence"
+       style="width: 70%">
+</div>
+<p class="figure-caption"><em>Figure 1. Convergence of full ADAPT-VQE (blue) and LLM-guided ADAPT-VQE (red dashed) for methane in STO-3G. Both reach the same converged energy. The CASCI reference (green dashed) and HF baseline (grey dashed) are shown for comparison.</em>
+</p>
+
+The result is clean for a reason that is worth stating explicitly. The LLM correctly applied Brillouin's theorem to rule out single excitations as the first selected operators in a closed-shell singlet calculation. This is not a general-purpose chemical heuristic — it is a precise quantum-mechanical statement about the structure of the Hamiltonian matrix. The model knew the right physics and applied it correctly.
+
+## Discussion
+
+This experiment is deliberately minimal — one molecule, one basis, one LLM call — and the result should be interpreted accordingly. For methane at equilibrium in a minimal basis, the electronic structure is simple and the correct answer is well-known. The LLM is not discovering anything new; it is recovering a result that any quantum chemist familiar with coupled-cluster theory would predict.
+
+The interesting question is whether this scales. For larger, more strongly correlated molecules — transition metal complexes, molecules near bond-breaking geometries, systems where DFT fails — the dominant correlation effects are less obvious and chemical intuition alone may not reliably identify them. There, the LLM would need feedback from simulation to know when its reasoning was wrong.
+
+This is precisely the architecture that Hiverge's Hive implements at scale. LLM agents propose circuit modifications; GPU-accelerated simulation via CUDA-Q evaluates their fitness; evolutionary selection retains the best and discards the rest. In the Hive's collaboration with Quantinuum on quantum chemistry problems, this loop rediscovered MP2 — the Møller–Plesset second-order perturbation method — as an emergent strategy, without being told to look for it. Neither the LLM nor the gradient criterion alone would have found it: the gradient criterion searches locally, and the LLM does not have access to the simulation results. The combination does.
+
+This notebook is one transparent iteration of that loop, at the smallest scale where the result is verifiable. Two things are worth carrying forward.
+
+**Chemical reasoning is a useful prior, not a replacement for gradient selection.** For well-understood systems, it can safely constrain the search space and reduce computational cost. For less understood systems, it should be treated as an initialisation strategy, with simulation providing the corrective feedback.
+
+**The bottleneck is shifting.** As LLMs become better at reasoning about quantum circuits, the limiting resource is no longer implementation — it is evaluation. Knowing whether a proposed circuit is physically meaningful, whether a converged energy is chemically accurate, whether the right operators were selected for the right reasons: these require the kind of domain knowledge that this notebook is built around. CUDA-Q and GPU-accelerated simulation are what make that evaluation fast enough to iterate.
+
+## Conclusions
+
+Starting from the ADAPT-VQE result in notebook one, this experiment tested whether LLM chemical reasoning could guide operator selection without sacrificing accuracy. For methane in a minimal basis, it could: the LLM-constrained pool recovered the full ADAPT-VQE energy exactly, using 19% fewer operators.
+
+The result holds because the LLM correctly applied Brillouin's theorem — a fundamental result in quantum chemistry — to identify which operator types cannot contribute at the first selection step of a closed-shell singlet calculation. For systems where the relevant physics is less clear-cut, the gradient criterion remains essential.
+
+The broader takeaway is architectural rather than numerical. LLM reasoning and simulation-driven selection are complementary. One is cheap and approximate; the other is exact but expensive. A workflow that uses the first to constrain the search space for the second is more efficient than either approach alone — and CUDA-Q is the platform that makes the simulation step fast enough for that workflow to scale.
+
+---
+
+**Acknowledgements**
+This work builds on *Chemically Aware VQE* (Einhorn, January 2026) and is inspired by the Hiverge–Quantinuum collaboration on AI-guided quantum algorithm discovery presented at GTC 2026. The ADAPT-VQE implementation uses NVIDIA's `cudaq-solvers` library.
+
+**References**
+
+- Grimsley *et al.*, *An adaptive variational algorithm for exact molecular simulations on a quantum computer*, Nature Communications, 2019
+- Khan *et al.*, *Chemically aware unitary coupled cluster with ab initio calculations on an ion trap quantum computer*, J. Chem. Phys. 158 (21), 2023
+- Hiverge / Quantinuum, *AI-guided discovery of quantum algorithms for combinatorial optimisation*, GTC 2026
