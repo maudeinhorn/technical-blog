@@ -287,3 +287,5 @@ Table 1 compares the three electronic-structure methods applied to methane in th
 <br>
 
 While UCCSD-VQE and ADAPT-VQE a comparable ground-state energy, the adaptive approach does so using half the number of variational parameters. This illustrates the core advantage of adaptive ansatz construction: chemical accuracy can be achieved with a significantly more compact quantum circuit when only physically relevant excitations are included. For larger and more strongly correlated molecules, this difference can ultimately determine whether a calculation is feasible at all.
+
+[Next: LLM-guided ADAPT-VQE →](llm-guided-adapt-vqe.html)

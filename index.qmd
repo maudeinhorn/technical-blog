@@ -2,7 +2,7 @@
 title: "Technical Blog"
 format:
   html:
-    theme: cosmo
+    theme: cerulean
 ---
 
 ## Welcome
@@ -13,14 +13,10 @@ This is a technical blog covering quantum computing research and applications.
 
 ## Projects
 
-### Refrigerant Chemistry ADAPT-VQE (January 2026)
-Quantum methods applied to molecular simulation problems in chemistry.
-
-[Read more](refrigerant-chemistry-adapt-vqe.html)
+### [Refrigerant Chemistry ADAPT-VQE (January 2026)](refrigerant-chemistry-vqe.html)
+<small>Applying adaptive quantum algorithms to molecular simulation problems in refrigerant chemistry and benchmarking convergence behaviour.</small>
 
 ---
 
-### LLM-guided ADAPT-VQE (March 2026)
-Exploring LLM-assisted operator selection in adaptive variational quantum algorithms.
-
-[Read more](llm-guided-adapt-vqe.html)
+### [LLM-guided ADAPT-VQE (March 2026)](llm-guided-adapt-vqe.html)
+<small>Exploring LLM-assisted operator selection in adaptive variational quantum algorithms, improving efficiency of variational optimisation loops.</small>
