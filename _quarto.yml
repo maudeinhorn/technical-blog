@@ -8,10 +8,6 @@ website:
     left:
       - href: index.qmd
         text: Home
-      - href: refrigerant-chemistry-adapt-vqe.qmd
-        text: Chemistry ADAPT-VQE
-      - href: llm-guided-adapt-vqe.qmd
-        text: LLM-guided ADAPT-VQE
   page-navigation: true
 
 format:
