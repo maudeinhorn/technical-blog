@@ -1,6 +1,6 @@
 ---
-title: "Chemical reasoning meets quantum algorithms"
-subtitle: "Can an LLM guide ansatz design? A CUDA-Q experiment"
+title: "LLM-guided ADAPT-VQE"
+subtitle: "Using chemical reasoning to constrain operator selection in CUDA-Q"
 author: "Maud Einhorn"
 date: last-modified
 
@@ -27,9 +27,9 @@ css: styles.css
 
 <div style="height: 2.5rem;"></div>
 
-This work builds directly on *Chemically Aware VQE: HF vs UCCSD-VQE vs ADAPT-VQE using CUDA-Q* (Einhorn, January 2026). It is also inspired by the collaboration between Hiverge and Quantinuum on AI-guided quantum algorithm discovery, presented at NVIDIA GTC 2026.
+This work builds directly on *Chemically Aware VQE: HF vs UCCSD-VQE vs ADAPT-VQE using CUDA-Q. It is also inspired by the collaboration between Hiverge and Quantinuum on AI-guided quantum algorithm discovery, presented at NVIDIA GTC 2026.
 
-## From gradient selection to chemical reasoning
+##Chemical reasoning meets quantum algorithms
 
 In the first notebook, we showed that ADAPT-VQE recovers essentially the same ground-state energy as UCCSD for methane — using only 4 operators instead of 8, and therefore a significantly shallower quantum circuit. The selection criterion was purely mathematical: at each iteration, ADAPT-VQE computes the energy gradient with respect to every operator in the pool and adds the one with the largest magnitude.
 
@@ -37,10 +37,10 @@ This raises a question at the intersection of quantum chemistry and agentic AI: 
 
 The experiment proceeds in four steps:
 
-- **Rebuild the system** — identical setup to notebook one, ensuring a controlled comparison
+- **Rebuilding the molecular system** — identical setup to notebook one, ensuring a controlled comparison
 - **Run ADAPT-VQE** — record which operators were selected and their optimised parameters
 - **Ask an LLM** — given the operator pool and molecular context, ask Claude to rank operators by expected chemical importance, *before* seeing the ADAPT-VQE result
-- **Close the loop** — run ADAPT-VQE again within the LLM-constrained pool and compare the energies
+- **LLM-guided ADAPT-VQE** — run ADAPT-VQE again within the LLM-constrained pool and compare the energies
 
 ::: {.callout-note}
 To run this notebook, install dependencies with:
@@ -69,7 +69,7 @@ import os
 
 This notebook uses the same molecular system as notebook one — methane (CH₄) in a minimal STO-3G basis, with a 2-electron, 3-orbital active space giving 6 qubits — and extends it by introducing an LLM in the operator selection loop. All Hamiltonians and reference states are identical to notebook one to ensure a fair and controlled comparison.
 
-### Rebuilding the system
+### Rebuilding the molecular system
 
 We begin by reconstructing the molecular Hamiltonian from the first notebook. The reference energies — HF at −39.726717 Ha and CASCI at −39.730452 Ha — define the same benchmarks as before.
 
@@ -211,7 +211,7 @@ llm_result = json.loads(cleaned)
 
 The model's response was chemically well-motivated. It correctly identified the paired double excitation (operator C) as dominant, citing the intra-pair correlation characteristic of a two-electron active space. It ranked single excitations last, invoking Brillouin's theorem: single excitations have zero first-order coupling to the closed-shell Hartree–Fock reference and therefore cannot appear as the first selected operator in an ADAPT-VQE run on a closed-shell singlet. This is the same physical reasoning that underpins CCSD theory.
 
-### Closing the loop: LLM-constrained pool
+### The LLM-constrained pool
 
 We use the LLM's ranking to construct a constrained pool, retaining only the top three ranked operator types (C, D, E — the double excitations) and removing the single excitations it ranked last with high confidence.
 
