@@ -11,7 +11,7 @@ This is a technical blog covering quantum computing research and applications.
 
 ## Projects
 
-#### [Refrigerant Chemistry ADAPT-VQE (January 2026)](refrigerant-chemistry-vqe.html)
+#### [Refrigerant Chemistry ADAPT-VQE (January 2026)](refrigerant-chemistry-adapt-vqe.html)
 <small>Applying adaptive quantum algorithms to molecular simulation problems in refrigerant chemistry and benchmarking convergence behaviour.</small>
 
 ---
