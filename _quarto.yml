@@ -14,3 +14,4 @@ format:
   html:
     theme: cerulean
     toc: true
+    css: styles.css

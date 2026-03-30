@@ -23,6 +23,7 @@ format:
       margin-width: 300px
     page-navigation: true
 css: styles.css
+
 ---
 
 <div style="height: 2.5rem;"></div>
@@ -178,7 +179,7 @@ pool_summary = (
 )
 ```
 
-```
+::: {.result-box}
 Pool composition (32 operators total): 12 single excitations, 20 double excitations
 Name:      CH4
 Electrons: 2
@@ -187,7 +188,7 @@ Qubits:    6
 HF:        -39.726717 Ha
 CASCI:     -39.730452 Ha
 Delta E:   3.73 mHa
-```
+:::
 
 We pose the operator selection problem to Claude as a chemical reasoning task using the Anthropic API. The model returns a ranked list of operator types with reasoning and confidence levels for each, which is parsed and used to filter the pool in the next section.
 
@@ -251,7 +252,7 @@ elif "```" in cleaned:
 llm_result = json.loads(cleaned)
 ```
 
-```
+::: {.result-box}
 Dominant correlation: Dynamic electron correlation via paired double excitation
 (HOMO->LUMO alpha+beta simultaneous), capturing the dominant left-right
 intra-pair correlation in the 2-electron active space.
@@ -272,7 +273,7 @@ Operator rankings:
   Rank 3: E [medium] — Higher virtual doubles give additional orbital corrections
   Rank 4: A [high]   — Single alpha excitation suppressed by Brillouin's theorem
   Rank 5: B [high]   — Single beta excitation equivalent to A by spin symmetry
-```
+:::
 
 The model's response was chemically well-motivated and consistent with coupled-cluster (CCSD) theory: operator C dominates, single excitations are correctly ruled out by Brillouin's theorem, and the secondary double excitations D and E provide angular and higher-orbital corrections. This output is used directly to filter the pool in the next section.
 
