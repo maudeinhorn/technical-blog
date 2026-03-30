@@ -60,6 +60,6 @@
     "href": "index.html#projects",
     "title": "Technical Blog",
     "section": "Projects",
-    "text": "Projects\n\nRefrigerant Chemistry ADAPT-VQE (January 2026)\nApplying adaptive quantum algorithms to molecular simulation problems in refrigerant chemistry and benchmarking convergence behaviour.\n\n\n\nLLM-guided ADAPT-VQE (March 2026)\nExploring LLM-assisted operator selection in adaptive variational quantum algorithms, improving efficiency of variational optimisation loops."
+    "text": "Projects"
   }
 ]
