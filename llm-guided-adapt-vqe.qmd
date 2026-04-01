@@ -192,17 +192,6 @@ Pool: {len(pool)} operators total ({len(singles)} single excitations, \
 print(pool_summary)
 ```
 
-<div class="result-box">
-Pool composition (32 operators total): 12 single excitations, 20 double excitations
-Name:      CH4
-Electrons: 2
-Orbitals:  3
-Qubits:    6
-HF:        -39.726717 Ha
-CASCI:     -39.730452 Ha
-Delta E:   3.73 mHa
-</div>
-
 We pose the operator selection problem to Claude as a chemical reasoning task using the Anthropic API. The model returns a ranked list of operator types with reasoning and confidence levels for each, which is parsed and used to filter the pool in the next section.
 
 ```{python}

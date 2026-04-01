@@ -355,9 +355,6 @@ Note
 <span id="cb5-21"><a href="#cb5-21" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(pool_summary)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 </div>
-<div class="result-box">
-<p>Pool composition (32 operators total): 12 single excitations, 20 double excitations Name: CH4 Electrons: 2 Orbitals: 3 Qubits: 6 HF: -39.726717 Ha CASCI: -39.730452 Ha Delta E: 3.73 mHa</p>
-</div>
 <p>We pose the operator selection problem to Claude as a chemical reasoning task using the Anthropic API. The model returns a ranked list of operator types with reasoning and confidence levels for each, which is parsed and used to filter the pool in the next section.</p>
 <div id="llm-prompt" class="cell" data-execution_count="5">
 <details open="" class="code-fold">
@@ -1177,182 +1174,171 @@ Note
 <span id="cb9-200"><a href="#cb9-200" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(pool_summary)</span>
 <span id="cb9-201"><a href="#cb9-201" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
 <span id="cb9-202"><a href="#cb9-202" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-203"><a href="#cb9-203" aria-hidden="true" tabindex="-1"></a><span class="dt">&lt;</span><span class="kw">div</span><span class="ot"> class</span><span class="op">=</span><span class="st">"result-box"</span><span class="dt">&gt;</span></span>
-<span id="cb9-204"><a href="#cb9-204" aria-hidden="true" tabindex="-1"></a>Pool composition (32 operators total): 12 single excitations, 20 double excitations</span>
-<span id="cb9-205"><a href="#cb9-205" aria-hidden="true" tabindex="-1"></a>Name:      CH4</span>
-<span id="cb9-206"><a href="#cb9-206" aria-hidden="true" tabindex="-1"></a>Electrons: 2</span>
-<span id="cb9-207"><a href="#cb9-207" aria-hidden="true" tabindex="-1"></a>Orbitals:  3</span>
-<span id="cb9-208"><a href="#cb9-208" aria-hidden="true" tabindex="-1"></a>Qubits:    6</span>
-<span id="cb9-209"><a href="#cb9-209" aria-hidden="true" tabindex="-1"></a>HF:        -39.726717 Ha</span>
-<span id="cb9-210"><a href="#cb9-210" aria-hidden="true" tabindex="-1"></a>CASCI:     -39.730452 Ha</span>
-<span id="cb9-211"><a href="#cb9-211" aria-hidden="true" tabindex="-1"></a>Delta E:   3.73 mHa</span>
-<span id="cb9-212"><a href="#cb9-212" aria-hidden="true" tabindex="-1"></a><span class="dt">&lt;/</span><span class="kw">div</span><span class="dt">&gt;</span></span>
-<span id="cb9-213"><a href="#cb9-213" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-214"><a href="#cb9-214" aria-hidden="true" tabindex="-1"></a>We pose the operator selection problem to Claude as a chemical reasoning task using the Anthropic API. The model returns a ranked list of operator types with reasoning and confidence levels for each, which is parsed and used to filter the pool in the next section.</span>
-<span id="cb9-215"><a href="#cb9-215" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-218"><a href="#cb9-218" aria-hidden="true" tabindex="-1"></a><span class="in">```{python}</span></span>
-<span id="cb9-219"><a href="#cb9-219" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: llm-prompt</span></span>
-<span id="cb9-220"><a href="#cb9-220" aria-hidden="true" tabindex="-1"></a><span class="co">#| echo: true</span></span>
-<span id="cb9-221"><a href="#cb9-221" aria-hidden="true" tabindex="-1"></a><span class="co">#| eval: false</span></span>
-<span id="cb9-222"><a href="#cb9-222" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-223"><a href="#cb9-223" aria-hidden="true" tabindex="-1"></a>system_prompt <span class="op">=</span> <span class="st">"""You are an expert in quantum chemistry and molecular electronic structure.</span></span>
-<span id="cb9-224"><a href="#cb9-224" aria-hidden="true" tabindex="-1"></a><span class="st">When asked to reason about operator selection for VQE-type algorithms, you draw on physical</span></span>
-<span id="cb9-225"><a href="#cb9-225" aria-hidden="true" tabindex="-1"></a><span class="st">and chemical intuition, not just mathematical criteria.</span></span>
-<span id="cb9-226"><a href="#cb9-226" aria-hidden="true" tabindex="-1"></a><span class="st">Return your response as valid JSON only, with no additional text."""</span></span>
+<span id="cb9-203"><a href="#cb9-203" aria-hidden="true" tabindex="-1"></a>We pose the operator selection problem to Claude as a chemical reasoning task using the Anthropic API. The model returns a ranked list of operator types with reasoning and confidence levels for each, which is parsed and used to filter the pool in the next section.</span>
+<span id="cb9-204"><a href="#cb9-204" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-207"><a href="#cb9-207" aria-hidden="true" tabindex="-1"></a><span class="in">```{python}</span></span>
+<span id="cb9-208"><a href="#cb9-208" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: llm-prompt</span></span>
+<span id="cb9-209"><a href="#cb9-209" aria-hidden="true" tabindex="-1"></a><span class="co">#| echo: true</span></span>
+<span id="cb9-210"><a href="#cb9-210" aria-hidden="true" tabindex="-1"></a><span class="co">#| eval: false</span></span>
+<span id="cb9-211"><a href="#cb9-211" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-212"><a href="#cb9-212" aria-hidden="true" tabindex="-1"></a>system_prompt <span class="op">=</span> <span class="st">"""You are an expert in quantum chemistry and molecular electronic structure.</span></span>
+<span id="cb9-213"><a href="#cb9-213" aria-hidden="true" tabindex="-1"></a><span class="st">When asked to reason about operator selection for VQE-type algorithms, you draw on physical</span></span>
+<span id="cb9-214"><a href="#cb9-214" aria-hidden="true" tabindex="-1"></a><span class="st">and chemical intuition, not just mathematical criteria.</span></span>
+<span id="cb9-215"><a href="#cb9-215" aria-hidden="true" tabindex="-1"></a><span class="st">Return your response as valid JSON only, with no additional text."""</span></span>
+<span id="cb9-216"><a href="#cb9-216" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-217"><a href="#cb9-217" aria-hidden="true" tabindex="-1"></a>user_prompt <span class="op">=</span> <span class="ss">f"""We are running ADAPT-VQE on </span><span class="sc">{</span>name<span class="sc">}</span><span class="ss"> in a minimal STO-3G basis.</span></span>
+<span id="cb9-218"><a href="#cb9-218" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-219"><a href="#cb9-219" aria-hidden="true" tabindex="-1"></a><span class="ss">Active space: </span><span class="sc">{</span>n_electrons<span class="sc">}</span><span class="ss"> electrons in </span><span class="sc">{</span>molecule<span class="sc">.</span>n_orbitals<span class="sc">}</span><span class="ss"> spatial orbitals </span><span class="op">\</span></span>
+<span id="cb9-220"><a href="#cb9-220" aria-hidden="true" tabindex="-1"></a><span class="ss">(</span><span class="sc">{</span>n_qubits<span class="sc">}</span><span class="ss"> spin-orbitals / </span><span class="sc">{</span>n_qubits<span class="sc">}</span><span class="ss"> qubits)</span></span>
+<span id="cb9-221"><a href="#cb9-221" aria-hidden="true" tabindex="-1"></a><span class="ss">Reference state: Hartree-Fock (closed-shell singlet)</span></span>
+<span id="cb9-222"><a href="#cb9-222" aria-hidden="true" tabindex="-1"></a><span class="ss">HF energy:    </span><span class="sc">{</span>E_hf<span class="sc">:.6f}</span><span class="ss"> Ha</span></span>
+<span id="cb9-223"><a href="#cb9-223" aria-hidden="true" tabindex="-1"></a><span class="ss">CASCI energy: </span><span class="sc">{</span>E_casci<span class="sc">:.6f}</span><span class="ss"> Ha</span></span>
+<span id="cb9-224"><a href="#cb9-224" aria-hidden="true" tabindex="-1"></a><span class="ss">Correlation energy to recover: </span><span class="sc">{</span><span class="bu">abs</span>(E_casci <span class="op">-</span> E_hf)<span class="op">*</span><span class="dv">1000</span><span class="sc">:.2f}</span><span class="ss"> mHa</span></span>
+<span id="cb9-225"><a href="#cb9-225" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-226"><a href="#cb9-226" aria-hidden="true" tabindex="-1"></a><span class="sc">{</span>pool_summary<span class="sc">}</span></span>
 <span id="cb9-227"><a href="#cb9-227" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-228"><a href="#cb9-228" aria-hidden="true" tabindex="-1"></a>user_prompt <span class="op">=</span> <span class="ss">f"""We are running ADAPT-VQE on </span><span class="sc">{</span>name<span class="sc">}</span><span class="ss"> in a minimal STO-3G basis.</span></span>
-<span id="cb9-229"><a href="#cb9-229" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-230"><a href="#cb9-230" aria-hidden="true" tabindex="-1"></a><span class="ss">Active space: </span><span class="sc">{</span>n_electrons<span class="sc">}</span><span class="ss"> electrons in </span><span class="sc">{</span>molecule<span class="sc">.</span>n_orbitals<span class="sc">}</span><span class="ss"> spatial orbitals </span><span class="op">\</span></span>
-<span id="cb9-231"><a href="#cb9-231" aria-hidden="true" tabindex="-1"></a><span class="ss">(</span><span class="sc">{</span>n_qubits<span class="sc">}</span><span class="ss"> spin-orbitals / </span><span class="sc">{</span>n_qubits<span class="sc">}</span><span class="ss"> qubits)</span></span>
-<span id="cb9-232"><a href="#cb9-232" aria-hidden="true" tabindex="-1"></a><span class="ss">Reference state: Hartree-Fock (closed-shell singlet)</span></span>
-<span id="cb9-233"><a href="#cb9-233" aria-hidden="true" tabindex="-1"></a><span class="ss">HF energy:    </span><span class="sc">{</span>E_hf<span class="sc">:.6f}</span><span class="ss"> Ha</span></span>
-<span id="cb9-234"><a href="#cb9-234" aria-hidden="true" tabindex="-1"></a><span class="ss">CASCI energy: </span><span class="sc">{</span>E_casci<span class="sc">:.6f}</span><span class="ss"> Ha</span></span>
-<span id="cb9-235"><a href="#cb9-235" aria-hidden="true" tabindex="-1"></a><span class="ss">Correlation energy to recover: </span><span class="sc">{</span><span class="bu">abs</span>(E_casci <span class="op">-</span> E_hf)<span class="op">*</span><span class="dv">1000</span><span class="sc">:.2f}</span><span class="ss"> mHa</span></span>
-<span id="cb9-236"><a href="#cb9-236" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-237"><a href="#cb9-237" aria-hidden="true" tabindex="-1"></a><span class="sc">{</span>pool_summary<span class="sc">}</span></span>
+<span id="cb9-228"><a href="#cb9-228" aria-hidden="true" tabindex="-1"></a><span class="ss">Operator types within this pool:</span></span>
+<span id="cb9-229"><a href="#cb9-229" aria-hidden="true" tabindex="-1"></a><span class="ss">A. Single excitation (alpha-spin): one alpha electron from HOMO to LUMO</span></span>
+<span id="cb9-230"><a href="#cb9-230" aria-hidden="true" tabindex="-1"></a><span class="ss">B. Single excitation (beta-spin): one beta electron from HOMO to LUMO</span></span>
+<span id="cb9-231"><a href="#cb9-231" aria-hidden="true" tabindex="-1"></a><span class="ss">C. Double excitation (paired): both electrons (alpha, beta) to same virtual orbital</span></span>
+<span id="cb9-232"><a href="#cb9-232" aria-hidden="true" tabindex="-1"></a><span class="ss">D. Double excitation (cross-spin): alpha and beta to different virtual orbitals</span></span>
+<span id="cb9-233"><a href="#cb9-233" aria-hidden="true" tabindex="-1"></a><span class="ss">E. Double excitation (higher virtual): excitation to higher-lying virtual orbitals</span></span>
+<span id="cb9-234"><a href="#cb9-234" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-235"><a href="#cb9-235" aria-hidden="true" tabindex="-1"></a><span class="ss">Rank these operator types A-E by expected chemical importance.</span></span>
+<span id="cb9-236"><a href="#cb9-236" aria-hidden="true" tabindex="-1"></a><span class="ss">For each give: rank, physical reasoning, and confidence (high/medium/low).</span></span>
+<span id="cb9-237"><a href="#cb9-237" aria-hidden="true" tabindex="-1"></a><span class="ss">Also identify the dominant correlation effect.</span></span>
 <span id="cb9-238"><a href="#cb9-238" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-239"><a href="#cb9-239" aria-hidden="true" tabindex="-1"></a><span class="ss">Operator types within this pool:</span></span>
-<span id="cb9-240"><a href="#cb9-240" aria-hidden="true" tabindex="-1"></a><span class="ss">A. Single excitation (alpha-spin): one alpha electron from HOMO to LUMO</span></span>
-<span id="cb9-241"><a href="#cb9-241" aria-hidden="true" tabindex="-1"></a><span class="ss">B. Single excitation (beta-spin): one beta electron from HOMO to LUMO</span></span>
-<span id="cb9-242"><a href="#cb9-242" aria-hidden="true" tabindex="-1"></a><span class="ss">C. Double excitation (paired): both electrons (alpha, beta) to same virtual orbital</span></span>
-<span id="cb9-243"><a href="#cb9-243" aria-hidden="true" tabindex="-1"></a><span class="ss">D. Double excitation (cross-spin): alpha and beta to different virtual orbitals</span></span>
-<span id="cb9-244"><a href="#cb9-244" aria-hidden="true" tabindex="-1"></a><span class="ss">E. Double excitation (higher virtual): excitation to higher-lying virtual orbitals</span></span>
-<span id="cb9-245"><a href="#cb9-245" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-246"><a href="#cb9-246" aria-hidden="true" tabindex="-1"></a><span class="ss">Rank these operator types A-E by expected chemical importance.</span></span>
-<span id="cb9-247"><a href="#cb9-247" aria-hidden="true" tabindex="-1"></a><span class="ss">For each give: rank, physical reasoning, and confidence (high/medium/low).</span></span>
-<span id="cb9-248"><a href="#cb9-248" aria-hidden="true" tabindex="-1"></a><span class="ss">Also identify the dominant correlation effect.</span></span>
+<span id="cb9-239"><a href="#cb9-239" aria-hidden="true" tabindex="-1"></a><span class="ss">Return JSON only:</span></span>
+<span id="cb9-240"><a href="#cb9-240" aria-hidden="true" tabindex="-1"></a><span class="ch">{{</span></span>
+<span id="cb9-241"><a href="#cb9-241" aria-hidden="true" tabindex="-1"></a><span class="ss">  "dominant_correlation": "string",</span></span>
+<span id="cb9-242"><a href="#cb9-242" aria-hidden="true" tabindex="-1"></a><span class="ss">  "operator_rankings": [</span></span>
+<span id="cb9-243"><a href="#cb9-243" aria-hidden="true" tabindex="-1"></a><span class="ss">    </span><span class="ch">{{</span><span class="ss">"operator": "A", "rank": 1, "reasoning": "string", "confidence": "high"</span><span class="ch">}}</span></span>
+<span id="cb9-244"><a href="#cb9-244" aria-hidden="true" tabindex="-1"></a><span class="ss">  ],</span></span>
+<span id="cb9-245"><a href="#cb9-245" aria-hidden="true" tabindex="-1"></a><span class="ss">  "key_insight": "string"</span></span>
+<span id="cb9-246"><a href="#cb9-246" aria-hidden="true" tabindex="-1"></a><span class="ch">}}</span><span class="ss">"""</span></span>
+<span id="cb9-247"><a href="#cb9-247" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-248"><a href="#cb9-248" aria-hidden="true" tabindex="-1"></a>client <span class="op">=</span> anthropic.Anthropic(api_key<span class="op">=</span>os.environ.get(<span class="st">"ANTHROPIC_API_KEY"</span>))</span>
 <span id="cb9-249"><a href="#cb9-249" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-250"><a href="#cb9-250" aria-hidden="true" tabindex="-1"></a><span class="ss">Return JSON only:</span></span>
-<span id="cb9-251"><a href="#cb9-251" aria-hidden="true" tabindex="-1"></a><span class="ch">{{</span></span>
-<span id="cb9-252"><a href="#cb9-252" aria-hidden="true" tabindex="-1"></a><span class="ss">  "dominant_correlation": "string",</span></span>
-<span id="cb9-253"><a href="#cb9-253" aria-hidden="true" tabindex="-1"></a><span class="ss">  "operator_rankings": [</span></span>
-<span id="cb9-254"><a href="#cb9-254" aria-hidden="true" tabindex="-1"></a><span class="ss">    </span><span class="ch">{{</span><span class="ss">"operator": "A", "rank": 1, "reasoning": "string", "confidence": "high"</span><span class="ch">}}</span></span>
-<span id="cb9-255"><a href="#cb9-255" aria-hidden="true" tabindex="-1"></a><span class="ss">  ],</span></span>
-<span id="cb9-256"><a href="#cb9-256" aria-hidden="true" tabindex="-1"></a><span class="ss">  "key_insight": "string"</span></span>
-<span id="cb9-257"><a href="#cb9-257" aria-hidden="true" tabindex="-1"></a><span class="ch">}}</span><span class="ss">"""</span></span>
-<span id="cb9-258"><a href="#cb9-258" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-259"><a href="#cb9-259" aria-hidden="true" tabindex="-1"></a>client <span class="op">=</span> anthropic.Anthropic(api_key<span class="op">=</span>os.environ.get(<span class="st">"ANTHROPIC_API_KEY"</span>))</span>
-<span id="cb9-260"><a href="#cb9-260" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-261"><a href="#cb9-261" aria-hidden="true" tabindex="-1"></a>response <span class="op">=</span> client.messages.create(</span>
-<span id="cb9-262"><a href="#cb9-262" aria-hidden="true" tabindex="-1"></a>    model<span class="op">=</span><span class="st">"claude-sonnet-4-6"</span>,</span>
-<span id="cb9-263"><a href="#cb9-263" aria-hidden="true" tabindex="-1"></a>    max_tokens<span class="op">=</span><span class="dv">2048</span>,</span>
-<span id="cb9-264"><a href="#cb9-264" aria-hidden="true" tabindex="-1"></a>    system<span class="op">=</span>system_prompt,</span>
-<span id="cb9-265"><a href="#cb9-265" aria-hidden="true" tabindex="-1"></a>    messages<span class="op">=</span>[{<span class="st">"role"</span>: <span class="st">"user"</span>, <span class="st">"content"</span>: user_prompt}]</span>
-<span id="cb9-266"><a href="#cb9-266" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb9-267"><a href="#cb9-267" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-268"><a href="#cb9-268" aria-hidden="true" tabindex="-1"></a>raw_response <span class="op">=</span> response.content[<span class="dv">0</span>].text</span>
-<span id="cb9-269"><a href="#cb9-269" aria-hidden="true" tabindex="-1"></a>cleaned <span class="op">=</span> raw_response.strip()</span>
-<span id="cb9-270"><a href="#cb9-270" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> <span class="st">"```json"</span> <span class="kw">in</span> cleaned:</span>
-<span id="cb9-271"><a href="#cb9-271" aria-hidden="true" tabindex="-1"></a>    cleaned <span class="op">=</span> cleaned.split(<span class="st">"```json"</span>)[<span class="dv">1</span>].split(<span class="st">"```"</span>)[<span class="dv">0</span>].strip()</span>
-<span id="cb9-272"><a href="#cb9-272" aria-hidden="true" tabindex="-1"></a><span class="cf">elif</span> <span class="st">"```"</span> <span class="kw">in</span> cleaned:</span>
-<span id="cb9-273"><a href="#cb9-273" aria-hidden="true" tabindex="-1"></a>    cleaned <span class="op">=</span> cleaned.split(<span class="st">"```"</span>)[<span class="dv">1</span>].split(<span class="st">"```"</span>)[<span class="dv">0</span>].strip()</span>
-<span id="cb9-274"><a href="#cb9-274" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-275"><a href="#cb9-275" aria-hidden="true" tabindex="-1"></a>llm_result <span class="op">=</span> json.loads(cleaned)</span>
-<span id="cb9-276"><a href="#cb9-276" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb9-277"><a href="#cb9-277" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-278"><a href="#cb9-278" aria-hidden="true" tabindex="-1"></a><span class="dt">&lt;</span><span class="kw">div</span><span class="ot"> class</span><span class="op">=</span><span class="st">"result-box"</span><span class="dt">&gt;</span></span>
-<span id="cb9-279"><a href="#cb9-279" aria-hidden="true" tabindex="-1"></a>Dominant correlation: Dynamic electron correlation via paired double excitation</span>
-<span id="cb9-280"><a href="#cb9-280" aria-hidden="true" tabindex="-1"></a>(HOMO-&gt;LUMO alpha+beta simultaneous), capturing the dominant left-right</span>
-<span id="cb9-281"><a href="#cb9-281" aria-hidden="true" tabindex="-1"></a>intra-pair correlation in the 2-electron active space.</span>
-<span id="cb9-282"><a href="#cb9-282" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-283"><a href="#cb9-283" aria-hidden="true" tabindex="-1"></a>Key insight: For a 2-electron active space with a closed-shell HF reference,</span>
-<span id="cb9-284"><a href="#cb9-284" aria-hidden="true" tabindex="-1"></a>the electronic structure problem reduces to a generalised 2-electron CI. The</span>
-<span id="cb9-285"><a href="#cb9-285" aria-hidden="true" tabindex="-1"></a>dominant physics is captured by the paired double excitation (operator C),</span>
-<span id="cb9-286"><a href="#cb9-286" aria-hidden="true" tabindex="-1"></a>which directly encodes the HOMO²-&gt;LUMO² amplitude responsible for dynamic</span>
-<span id="cb9-287"><a href="#cb9-287" aria-hidden="true" tabindex="-1"></a>electron correlation between the two active electrons. Single excitations are</span>
-<span id="cb9-288"><a href="#cb9-288" aria-hidden="true" tabindex="-1"></a>rigorously suppressed at the HF reference by Brillouin's theorem, making them</span>
-<span id="cb9-289"><a href="#cb9-289" aria-hidden="true" tabindex="-1"></a>irrelevant at early ADAPT iterations. The 3.73 mHa correlation energy in this</span>
-<span id="cb9-290"><a href="#cb9-290" aria-hidden="true" tabindex="-1"></a>small active space is overwhelmingly attributable to operator C, with operators</span>
-<span id="cb9-291"><a href="#cb9-291" aria-hidden="true" tabindex="-1"></a>D and E providing secondary angular and higher-orbital corrections.</span>
-<span id="cb9-292"><a href="#cb9-292" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-293"><a href="#cb9-293" aria-hidden="true" tabindex="-1"></a>Operator rankings:</span>
-<span id="cb9-294"><a href="#cb9-294" aria-hidden="true" tabindex="-1"></a>  Rank 1: C <span class="co">[</span><span class="ot">high</span><span class="co">]</span>   — Paired double excitation captures dominant intra-pair correlation</span>
-<span id="cb9-295"><a href="#cb9-295" aria-hidden="true" tabindex="-1"></a>  Rank 2: D <span class="co">[</span><span class="ot">medium</span><span class="co">]</span> — Cross-spin doubles provide secondary angular correlation</span>
-<span id="cb9-296"><a href="#cb9-296" aria-hidden="true" tabindex="-1"></a>  Rank 3: E <span class="co">[</span><span class="ot">medium</span><span class="co">]</span> — Higher virtual doubles give additional orbital corrections</span>
-<span id="cb9-297"><a href="#cb9-297" aria-hidden="true" tabindex="-1"></a>  Rank 4: A <span class="co">[</span><span class="ot">high</span><span class="co">]</span>   — Single alpha excitation suppressed by Brillouin's theorem</span>
-<span id="cb9-298"><a href="#cb9-298" aria-hidden="true" tabindex="-1"></a>  Rank 5: B <span class="co">[</span><span class="ot">high</span><span class="co">]</span>   — Single beta excitation equivalent to A by spin symmetry</span>
-<span id="cb9-299"><a href="#cb9-299" aria-hidden="true" tabindex="-1"></a><span class="dt">&lt;/</span><span class="kw">div</span><span class="dt">&gt;</span></span>
-<span id="cb9-300"><a href="#cb9-300" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-301"><a href="#cb9-301" aria-hidden="true" tabindex="-1"></a>The model's response was chemically well-motivated and consistent with coupled-cluster (CCSD) theory: operator C dominates, single excitations are correctly ruled out by Brillouin's theorem, and the secondary double excitations D and E provide angular and higher-orbital corrections. This output is used directly to filter the pool in the next section.</span>
+<span id="cb9-250"><a href="#cb9-250" aria-hidden="true" tabindex="-1"></a>response <span class="op">=</span> client.messages.create(</span>
+<span id="cb9-251"><a href="#cb9-251" aria-hidden="true" tabindex="-1"></a>    model<span class="op">=</span><span class="st">"claude-sonnet-4-6"</span>,</span>
+<span id="cb9-252"><a href="#cb9-252" aria-hidden="true" tabindex="-1"></a>    max_tokens<span class="op">=</span><span class="dv">2048</span>,</span>
+<span id="cb9-253"><a href="#cb9-253" aria-hidden="true" tabindex="-1"></a>    system<span class="op">=</span>system_prompt,</span>
+<span id="cb9-254"><a href="#cb9-254" aria-hidden="true" tabindex="-1"></a>    messages<span class="op">=</span>[{<span class="st">"role"</span>: <span class="st">"user"</span>, <span class="st">"content"</span>: user_prompt}]</span>
+<span id="cb9-255"><a href="#cb9-255" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb9-256"><a href="#cb9-256" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-257"><a href="#cb9-257" aria-hidden="true" tabindex="-1"></a>raw_response <span class="op">=</span> response.content[<span class="dv">0</span>].text</span>
+<span id="cb9-258"><a href="#cb9-258" aria-hidden="true" tabindex="-1"></a>cleaned <span class="op">=</span> raw_response.strip()</span>
+<span id="cb9-259"><a href="#cb9-259" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> <span class="st">"```json"</span> <span class="kw">in</span> cleaned:</span>
+<span id="cb9-260"><a href="#cb9-260" aria-hidden="true" tabindex="-1"></a>    cleaned <span class="op">=</span> cleaned.split(<span class="st">"```json"</span>)[<span class="dv">1</span>].split(<span class="st">"```"</span>)[<span class="dv">0</span>].strip()</span>
+<span id="cb9-261"><a href="#cb9-261" aria-hidden="true" tabindex="-1"></a><span class="cf">elif</span> <span class="st">"```"</span> <span class="kw">in</span> cleaned:</span>
+<span id="cb9-262"><a href="#cb9-262" aria-hidden="true" tabindex="-1"></a>    cleaned <span class="op">=</span> cleaned.split(<span class="st">"```"</span>)[<span class="dv">1</span>].split(<span class="st">"```"</span>)[<span class="dv">0</span>].strip()</span>
+<span id="cb9-263"><a href="#cb9-263" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-264"><a href="#cb9-264" aria-hidden="true" tabindex="-1"></a>llm_result <span class="op">=</span> json.loads(cleaned)</span>
+<span id="cb9-265"><a href="#cb9-265" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb9-266"><a href="#cb9-266" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-267"><a href="#cb9-267" aria-hidden="true" tabindex="-1"></a><span class="dt">&lt;</span><span class="kw">div</span><span class="ot"> class</span><span class="op">=</span><span class="st">"result-box"</span><span class="dt">&gt;</span></span>
+<span id="cb9-268"><a href="#cb9-268" aria-hidden="true" tabindex="-1"></a>Dominant correlation: Dynamic electron correlation via paired double excitation</span>
+<span id="cb9-269"><a href="#cb9-269" aria-hidden="true" tabindex="-1"></a>(HOMO-&gt;LUMO alpha+beta simultaneous), capturing the dominant left-right</span>
+<span id="cb9-270"><a href="#cb9-270" aria-hidden="true" tabindex="-1"></a>intra-pair correlation in the 2-electron active space.</span>
+<span id="cb9-271"><a href="#cb9-271" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-272"><a href="#cb9-272" aria-hidden="true" tabindex="-1"></a>Key insight: For a 2-electron active space with a closed-shell HF reference,</span>
+<span id="cb9-273"><a href="#cb9-273" aria-hidden="true" tabindex="-1"></a>the electronic structure problem reduces to a generalised 2-electron CI. The</span>
+<span id="cb9-274"><a href="#cb9-274" aria-hidden="true" tabindex="-1"></a>dominant physics is captured by the paired double excitation (operator C),</span>
+<span id="cb9-275"><a href="#cb9-275" aria-hidden="true" tabindex="-1"></a>which directly encodes the HOMO²-&gt;LUMO² amplitude responsible for dynamic</span>
+<span id="cb9-276"><a href="#cb9-276" aria-hidden="true" tabindex="-1"></a>electron correlation between the two active electrons. Single excitations are</span>
+<span id="cb9-277"><a href="#cb9-277" aria-hidden="true" tabindex="-1"></a>rigorously suppressed at the HF reference by Brillouin's theorem, making them</span>
+<span id="cb9-278"><a href="#cb9-278" aria-hidden="true" tabindex="-1"></a>irrelevant at early ADAPT iterations. The 3.73 mHa correlation energy in this</span>
+<span id="cb9-279"><a href="#cb9-279" aria-hidden="true" tabindex="-1"></a>small active space is overwhelmingly attributable to operator C, with operators</span>
+<span id="cb9-280"><a href="#cb9-280" aria-hidden="true" tabindex="-1"></a>D and E providing secondary angular and higher-orbital corrections.</span>
+<span id="cb9-281"><a href="#cb9-281" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-282"><a href="#cb9-282" aria-hidden="true" tabindex="-1"></a>Operator rankings:</span>
+<span id="cb9-283"><a href="#cb9-283" aria-hidden="true" tabindex="-1"></a>  Rank 1: C <span class="co">[</span><span class="ot">high</span><span class="co">]</span>   — Paired double excitation captures dominant intra-pair correlation</span>
+<span id="cb9-284"><a href="#cb9-284" aria-hidden="true" tabindex="-1"></a>  Rank 2: D <span class="co">[</span><span class="ot">medium</span><span class="co">]</span> — Cross-spin doubles provide secondary angular correlation</span>
+<span id="cb9-285"><a href="#cb9-285" aria-hidden="true" tabindex="-1"></a>  Rank 3: E <span class="co">[</span><span class="ot">medium</span><span class="co">]</span> — Higher virtual doubles give additional orbital corrections</span>
+<span id="cb9-286"><a href="#cb9-286" aria-hidden="true" tabindex="-1"></a>  Rank 4: A <span class="co">[</span><span class="ot">high</span><span class="co">]</span>   — Single alpha excitation suppressed by Brillouin's theorem</span>
+<span id="cb9-287"><a href="#cb9-287" aria-hidden="true" tabindex="-1"></a>  Rank 5: B <span class="co">[</span><span class="ot">high</span><span class="co">]</span>   — Single beta excitation equivalent to A by spin symmetry</span>
+<span id="cb9-288"><a href="#cb9-288" aria-hidden="true" tabindex="-1"></a><span class="dt">&lt;/</span><span class="kw">div</span><span class="dt">&gt;</span></span>
+<span id="cb9-289"><a href="#cb9-289" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-290"><a href="#cb9-290" aria-hidden="true" tabindex="-1"></a>The model's response was chemically well-motivated and consistent with coupled-cluster (CCSD) theory: operator C dominates, single excitations are correctly ruled out by Brillouin's theorem, and the secondary double excitations D and E provide angular and higher-orbital corrections. This output is used directly to filter the pool in the next section.</span>
+<span id="cb9-291"><a href="#cb9-291" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-292"><a href="#cb9-292" aria-hidden="true" tabindex="-1"></a><span class="fu">### The LLM-constrained pool</span></span>
+<span id="cb9-293"><a href="#cb9-293" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-294"><a href="#cb9-294" aria-hidden="true" tabindex="-1"></a>We use the LLM's ranking to construct a constrained pool, retaining only the top three ranked operator types (C, D, E — the double excitations) and removing the single excitations it ranked last with high confidence.</span>
+<span id="cb9-295"><a href="#cb9-295" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-298"><a href="#cb9-298" aria-hidden="true" tabindex="-1"></a><span class="in">```{python}</span></span>
+<span id="cb9-299"><a href="#cb9-299" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: constrained-pool</span></span>
+<span id="cb9-300"><a href="#cb9-300" aria-hidden="true" tabindex="-1"></a><span class="co">#| echo: true</span></span>
+<span id="cb9-301"><a href="#cb9-301" aria-hidden="true" tabindex="-1"></a><span class="co">#| eval: false</span></span>
 <span id="cb9-302"><a href="#cb9-302" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-303"><a href="#cb9-303" aria-hidden="true" tabindex="-1"></a><span class="fu">### The LLM-constrained pool</span></span>
-<span id="cb9-304"><a href="#cb9-304" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-305"><a href="#cb9-305" aria-hidden="true" tabindex="-1"></a>We use the LLM's ranking to construct a constrained pool, retaining only the top three ranked operator types (C, D, E — the double excitations) and removing the single excitations it ranked last with high confidence.</span>
-<span id="cb9-306"><a href="#cb9-306" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-309"><a href="#cb9-309" aria-hidden="true" tabindex="-1"></a><span class="in">```{python}</span></span>
-<span id="cb9-310"><a href="#cb9-310" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: constrained-pool</span></span>
-<span id="cb9-311"><a href="#cb9-311" aria-hidden="true" tabindex="-1"></a><span class="co">#| echo: true</span></span>
-<span id="cb9-312"><a href="#cb9-312" aria-hidden="true" tabindex="-1"></a><span class="co">#| eval: false</span></span>
+<span id="cb9-303"><a href="#cb9-303" aria-hidden="true" tabindex="-1"></a>n_singles <span class="op">=</span> n_qubits</span>
+<span id="cb9-304"><a href="#cb9-304" aria-hidden="true" tabindex="-1"></a>n_doubles <span class="op">=</span> <span class="bu">len</span>(pool) <span class="op">-</span> n_singles</span>
+<span id="cb9-305"><a href="#cb9-305" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-306"><a href="#cb9-306" aria-hidden="true" tabindex="-1"></a>operator_type_map <span class="op">=</span> {</span>
+<span id="cb9-307"><a href="#cb9-307" aria-hidden="true" tabindex="-1"></a>    <span class="st">"A"</span>: <span class="bu">list</span>(<span class="bu">range</span>(<span class="dv">0</span>, n_singles <span class="op">//</span> <span class="dv">2</span>)),</span>
+<span id="cb9-308"><a href="#cb9-308" aria-hidden="true" tabindex="-1"></a>    <span class="st">"B"</span>: <span class="bu">list</span>(<span class="bu">range</span>(n_singles <span class="op">//</span> <span class="dv">2</span>, n_singles)),</span>
+<span id="cb9-309"><a href="#cb9-309" aria-hidden="true" tabindex="-1"></a>    <span class="st">"C"</span>: <span class="bu">list</span>(<span class="bu">range</span>(n_singles, n_singles <span class="op">+</span> n_doubles <span class="op">//</span> <span class="dv">2</span>)),</span>
+<span id="cb9-310"><a href="#cb9-310" aria-hidden="true" tabindex="-1"></a>    <span class="st">"D"</span>: <span class="bu">list</span>(<span class="bu">range</span>(n_singles <span class="op">+</span> n_doubles <span class="op">//</span> <span class="dv">2</span>, <span class="bu">len</span>(pool))),</span>
+<span id="cb9-311"><a href="#cb9-311" aria-hidden="true" tabindex="-1"></a>    <span class="st">"E"</span>: <span class="bu">list</span>(<span class="bu">range</span>(n_singles <span class="op">+</span> n_doubles <span class="op">//</span> <span class="dv">2</span>, <span class="bu">len</span>(pool))),</span>
+<span id="cb9-312"><a href="#cb9-312" aria-hidden="true" tabindex="-1"></a>}</span>
 <span id="cb9-313"><a href="#cb9-313" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-314"><a href="#cb9-314" aria-hidden="true" tabindex="-1"></a>n_singles <span class="op">=</span> n_qubits</span>
-<span id="cb9-315"><a href="#cb9-315" aria-hidden="true" tabindex="-1"></a>n_doubles <span class="op">=</span> <span class="bu">len</span>(pool) <span class="op">-</span> n_singles</span>
-<span id="cb9-316"><a href="#cb9-316" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-317"><a href="#cb9-317" aria-hidden="true" tabindex="-1"></a>operator_type_map <span class="op">=</span> {</span>
-<span id="cb9-318"><a href="#cb9-318" aria-hidden="true" tabindex="-1"></a>    <span class="st">"A"</span>: <span class="bu">list</span>(<span class="bu">range</span>(<span class="dv">0</span>, n_singles <span class="op">//</span> <span class="dv">2</span>)),</span>
-<span id="cb9-319"><a href="#cb9-319" aria-hidden="true" tabindex="-1"></a>    <span class="st">"B"</span>: <span class="bu">list</span>(<span class="bu">range</span>(n_singles <span class="op">//</span> <span class="dv">2</span>, n_singles)),</span>
-<span id="cb9-320"><a href="#cb9-320" aria-hidden="true" tabindex="-1"></a>    <span class="st">"C"</span>: <span class="bu">list</span>(<span class="bu">range</span>(n_singles, n_singles <span class="op">+</span> n_doubles <span class="op">//</span> <span class="dv">2</span>)),</span>
-<span id="cb9-321"><a href="#cb9-321" aria-hidden="true" tabindex="-1"></a>    <span class="st">"D"</span>: <span class="bu">list</span>(<span class="bu">range</span>(n_singles <span class="op">+</span> n_doubles <span class="op">//</span> <span class="dv">2</span>, <span class="bu">len</span>(pool))),</span>
-<span id="cb9-322"><a href="#cb9-322" aria-hidden="true" tabindex="-1"></a>    <span class="st">"E"</span>: <span class="bu">list</span>(<span class="bu">range</span>(n_singles <span class="op">+</span> n_doubles <span class="op">//</span> <span class="dv">2</span>, <span class="bu">len</span>(pool))),</span>
-<span id="cb9-323"><a href="#cb9-323" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb9-314"><a href="#cb9-314" aria-hidden="true" tabindex="-1"></a>top_n <span class="op">=</span> <span class="dv">3</span></span>
+<span id="cb9-315"><a href="#cb9-315" aria-hidden="true" tabindex="-1"></a>top_operator_types <span class="op">=</span> [</span>
+<span id="cb9-316"><a href="#cb9-316" aria-hidden="true" tabindex="-1"></a>    op[<span class="st">'operator'</span>] <span class="cf">for</span> op <span class="kw">in</span></span>
+<span id="cb9-317"><a href="#cb9-317" aria-hidden="true" tabindex="-1"></a>    <span class="bu">sorted</span>(llm_result[<span class="st">'operator_rankings'</span>], key<span class="op">=</span><span class="kw">lambda</span> x: x[<span class="st">'rank'</span>])[:top_n]</span>
+<span id="cb9-318"><a href="#cb9-318" aria-hidden="true" tabindex="-1"></a>]</span>
+<span id="cb9-319"><a href="#cb9-319" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-320"><a href="#cb9-320" aria-hidden="true" tabindex="-1"></a>llm_pool_indices <span class="op">=</span> <span class="bu">sorted</span>(<span class="bu">set</span>(</span>
+<span id="cb9-321"><a href="#cb9-321" aria-hidden="true" tabindex="-1"></a>    idx <span class="cf">for</span> op_type <span class="kw">in</span> top_operator_types</span>
+<span id="cb9-322"><a href="#cb9-322" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> idx <span class="kw">in</span> operator_type_map.get(op_type, [])</span>
+<span id="cb9-323"><a href="#cb9-323" aria-hidden="true" tabindex="-1"></a>))</span>
 <span id="cb9-324"><a href="#cb9-324" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-325"><a href="#cb9-325" aria-hidden="true" tabindex="-1"></a>top_n <span class="op">=</span> <span class="dv">3</span></span>
-<span id="cb9-326"><a href="#cb9-326" aria-hidden="true" tabindex="-1"></a>top_operator_types <span class="op">=</span> [</span>
-<span id="cb9-327"><a href="#cb9-327" aria-hidden="true" tabindex="-1"></a>    op[<span class="st">'operator'</span>] <span class="cf">for</span> op <span class="kw">in</span></span>
-<span id="cb9-328"><a href="#cb9-328" aria-hidden="true" tabindex="-1"></a>    <span class="bu">sorted</span>(llm_result[<span class="st">'operator_rankings'</span>], key<span class="op">=</span><span class="kw">lambda</span> x: x[<span class="st">'rank'</span>])[:top_n]</span>
-<span id="cb9-329"><a href="#cb9-329" aria-hidden="true" tabindex="-1"></a>]</span>
-<span id="cb9-330"><a href="#cb9-330" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-331"><a href="#cb9-331" aria-hidden="true" tabindex="-1"></a>llm_pool_indices <span class="op">=</span> <span class="bu">sorted</span>(<span class="bu">set</span>(</span>
-<span id="cb9-332"><a href="#cb9-332" aria-hidden="true" tabindex="-1"></a>    idx <span class="cf">for</span> op_type <span class="kw">in</span> top_operator_types</span>
-<span id="cb9-333"><a href="#cb9-333" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> idx <span class="kw">in</span> operator_type_map.get(op_type, [])</span>
-<span id="cb9-334"><a href="#cb9-334" aria-hidden="true" tabindex="-1"></a>))</span>
-<span id="cb9-335"><a href="#cb9-335" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-336"><a href="#cb9-336" aria-hidden="true" tabindex="-1"></a>llm_constrained_pool <span class="op">=</span> [pool[i] <span class="cf">for</span> i <span class="kw">in</span> llm_pool_indices <span class="cf">if</span> i <span class="op">&lt;</span> <span class="bu">len</span>(pool)]</span>
-<span id="cb9-337"><a href="#cb9-337" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb9-338"><a href="#cb9-338" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-339"><a href="#cb9-339" aria-hidden="true" tabindex="-1"></a>This reduced the pool from 32 to 26 operators — a 19% reduction. We then ran ADAPT-VQE with identical settings within this constrained pool.</span>
-<span id="cb9-340"><a href="#cb9-340" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-343"><a href="#cb9-343" aria-hidden="true" tabindex="-1"></a><span class="in">```{python}</span></span>
-<span id="cb9-344"><a href="#cb9-344" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: llm-guided-adapt</span></span>
-<span id="cb9-345"><a href="#cb9-345" aria-hidden="true" tabindex="-1"></a><span class="co">#| echo: true</span></span>
-<span id="cb9-346"><a href="#cb9-346" aria-hidden="true" tabindex="-1"></a><span class="co">#| eval: false</span></span>
+<span id="cb9-325"><a href="#cb9-325" aria-hidden="true" tabindex="-1"></a>llm_constrained_pool <span class="op">=</span> [pool[i] <span class="cf">for</span> i <span class="kw">in</span> llm_pool_indices <span class="cf">if</span> i <span class="op">&lt;</span> <span class="bu">len</span>(pool)]</span>
+<span id="cb9-326"><a href="#cb9-326" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb9-327"><a href="#cb9-327" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-328"><a href="#cb9-328" aria-hidden="true" tabindex="-1"></a>This reduced the pool from 32 to 26 operators — a 19% reduction. We then ran ADAPT-VQE with identical settings within this constrained pool.</span>
+<span id="cb9-329"><a href="#cb9-329" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-332"><a href="#cb9-332" aria-hidden="true" tabindex="-1"></a><span class="in">```{python}</span></span>
+<span id="cb9-333"><a href="#cb9-333" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: llm-guided-adapt</span></span>
+<span id="cb9-334"><a href="#cb9-334" aria-hidden="true" tabindex="-1"></a><span class="co">#| echo: true</span></span>
+<span id="cb9-335"><a href="#cb9-335" aria-hidden="true" tabindex="-1"></a><span class="co">#| eval: false</span></span>
+<span id="cb9-336"><a href="#cb9-336" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-337"><a href="#cb9-337" aria-hidden="true" tabindex="-1"></a>E_llm_adapt, thetas_llm_adapt, ops_llm_adapt <span class="op">=</span> solvers.adapt_vqe(</span>
+<span id="cb9-338"><a href="#cb9-338" aria-hidden="true" tabindex="-1"></a>    init_state,</span>
+<span id="cb9-339"><a href="#cb9-339" aria-hidden="true" tabindex="-1"></a>    H,</span>
+<span id="cb9-340"><a href="#cb9-340" aria-hidden="true" tabindex="-1"></a>    llm_constrained_pool,</span>
+<span id="cb9-341"><a href="#cb9-341" aria-hidden="true" tabindex="-1"></a>    max_iterations<span class="op">=</span><span class="dv">4</span>,</span>
+<span id="cb9-342"><a href="#cb9-342" aria-hidden="true" tabindex="-1"></a>    grad_norm_tol<span class="op">=</span><span class="fl">1e-3</span></span>
+<span id="cb9-343"><a href="#cb9-343" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb9-344"><a href="#cb9-344" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb9-345"><a href="#cb9-345" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-346"><a href="#cb9-346" aria-hidden="true" tabindex="-1"></a><span class="fu">### Results</span></span>
 <span id="cb9-347"><a href="#cb9-347" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-348"><a href="#cb9-348" aria-hidden="true" tabindex="-1"></a>E_llm_adapt, thetas_llm_adapt, ops_llm_adapt <span class="op">=</span> solvers.adapt_vqe(</span>
-<span id="cb9-349"><a href="#cb9-349" aria-hidden="true" tabindex="-1"></a>    init_state,</span>
-<span id="cb9-350"><a href="#cb9-350" aria-hidden="true" tabindex="-1"></a>    H,</span>
-<span id="cb9-351"><a href="#cb9-351" aria-hidden="true" tabindex="-1"></a>    llm_constrained_pool,</span>
-<span id="cb9-352"><a href="#cb9-352" aria-hidden="true" tabindex="-1"></a>    max_iterations<span class="op">=</span><span class="dv">4</span>,</span>
-<span id="cb9-353"><a href="#cb9-353" aria-hidden="true" tabindex="-1"></a>    grad_norm_tol<span class="op">=</span><span class="fl">1e-3</span></span>
-<span id="cb9-354"><a href="#cb9-354" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb9-355"><a href="#cb9-355" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb9-348"><a href="#cb9-348" aria-hidden="true" tabindex="-1"></a>Table 1 extends the comparison from notebook one with the LLM-guided calculation.</span>
+<span id="cb9-349"><a href="#cb9-349" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-350"><a href="#cb9-350" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Method <span class="pp">|</span> Energy (Ha) <span class="pp">|</span> ΔE vs HF (mHa) <span class="pp">|</span> Parameters <span class="pp">|</span> Pool size <span class="pp">|</span></span>
+<span id="cb9-351"><a href="#cb9-351" aria-hidden="true" tabindex="-1"></a><span class="pp">|---|---|---|---|---|</span></span>
+<span id="cb9-352"><a href="#cb9-352" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Hartree–Fock (HF) <span class="pp">|</span> −39.726717 <span class="pp">|</span> - <span class="pp">|</span> - <span class="pp">|</span> - <span class="pp">|</span></span>
+<span id="cb9-353"><a href="#cb9-353" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> VQE (UCCSD) <span class="pp">|</span> −39.730448 <span class="pp">|</span> −3.731 <span class="pp">|</span> 8 <span class="pp">|</span> 32 <span class="pp">|</span></span>
+<span id="cb9-354"><a href="#cb9-354" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> ADAPT-VQE <span class="pp">|</span> −39.730451 <span class="pp">|</span> −3.735 <span class="pp">|</span> 4 <span class="pp">|</span> 32 <span class="pp">|</span></span>
+<span id="cb9-355"><a href="#cb9-355" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> LLM-guided ADAPT-VQE <span class="pp">|</span> −39.730451 <span class="pp">|</span> −3.735 <span class="pp">|</span> 4 <span class="pp">|</span> 26 <span class="pp">|</span></span>
 <span id="cb9-356"><a href="#cb9-356" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-357"><a href="#cb9-357" aria-hidden="true" tabindex="-1"></a><span class="fu">### Results</span></span>
+<span id="cb9-357"><a href="#cb9-357" aria-hidden="true" tabindex="-1"></a><span class="dt">&lt;</span><span class="kw">br</span><span class="dt">&gt;</span></span>
 <span id="cb9-358"><a href="#cb9-358" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-359"><a href="#cb9-359" aria-hidden="true" tabindex="-1"></a>Table 1 extends the comparison from notebook one with the LLM-guided calculation.</span>
+<span id="cb9-359"><a href="#cb9-359" aria-hidden="true" tabindex="-1"></a>The LLM-guided calculation recovers the same energy as the full ADAPT-VQE run, while evaluating 19% fewer operators at each gradient step. The two runs selected the same operators in the same order.</span>
 <span id="cb9-360"><a href="#cb9-360" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-361"><a href="#cb9-361" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Method <span class="pp">|</span> Energy (Ha) <span class="pp">|</span> ΔE vs HF (mHa) <span class="pp">|</span> Parameters <span class="pp">|</span> Pool size <span class="pp">|</span></span>
-<span id="cb9-362"><a href="#cb9-362" aria-hidden="true" tabindex="-1"></a><span class="pp">|---|---|---|---|---|</span></span>
-<span id="cb9-363"><a href="#cb9-363" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Hartree–Fock (HF) <span class="pp">|</span> −39.726717 <span class="pp">|</span> - <span class="pp">|</span> - <span class="pp">|</span> - <span class="pp">|</span></span>
-<span id="cb9-364"><a href="#cb9-364" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> VQE (UCCSD) <span class="pp">|</span> −39.730448 <span class="pp">|</span> −3.731 <span class="pp">|</span> 8 <span class="pp">|</span> 32 <span class="pp">|</span></span>
-<span id="cb9-365"><a href="#cb9-365" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> ADAPT-VQE <span class="pp">|</span> −39.730451 <span class="pp">|</span> −3.735 <span class="pp">|</span> 4 <span class="pp">|</span> 32 <span class="pp">|</span></span>
-<span id="cb9-366"><a href="#cb9-366" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> LLM-guided ADAPT-VQE <span class="pp">|</span> −39.730451 <span class="pp">|</span> −3.735 <span class="pp">|</span> 4 <span class="pp">|</span> 26 <span class="pp">|</span></span>
-<span id="cb9-367"><a href="#cb9-367" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-368"><a href="#cb9-368" aria-hidden="true" tabindex="-1"></a><span class="dt">&lt;</span><span class="kw">br</span><span class="dt">&gt;</span></span>
-<span id="cb9-369"><a href="#cb9-369" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-370"><a href="#cb9-370" aria-hidden="true" tabindex="-1"></a>The LLM-guided calculation recovers the same energy as the full ADAPT-VQE run, while evaluating 19% fewer operators at each gradient step. The two runs selected the same operators in the same order.</span>
-<span id="cb9-371"><a href="#cb9-371" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-372"><a href="#cb9-372" aria-hidden="true" tabindex="-1"></a><span class="dt">&lt;</span><span class="kw">div</span><span class="ot"> style</span><span class="op">=</span><span class="st">"display: flex; justify-content: center; margin: 1.5rem 0;"</span><span class="dt">&gt;</span></span>
-<span id="cb9-373"><a href="#cb9-373" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&lt;</span><span class="kw">img</span><span class="ot"> src</span><span class="op">=</span><span class="st">"figures/llm-guided-adapt-vqe/adapt_vqe_llm_comparison.png"</span></span>
-<span id="cb9-374"><a href="#cb9-374" aria-hidden="true" tabindex="-1"></a><span class="ot">       alt</span><span class="op">=</span><span class="st">"Full ADAPT-VQE vs LLM-guided ADAPT-VQE convergence"</span></span>
-<span id="cb9-375"><a href="#cb9-375" aria-hidden="true" tabindex="-1"></a><span class="ot">       style</span><span class="op">=</span><span class="st">"width: 65%"</span><span class="dt">&gt;</span></span>
-<span id="cb9-376"><a href="#cb9-376" aria-hidden="true" tabindex="-1"></a><span class="dt">&lt;/</span><span class="kw">div</span><span class="dt">&gt;</span></span>
-<span id="cb9-377"><a href="#cb9-377" aria-hidden="true" tabindex="-1"></a><span class="dt">&lt;</span><span class="kw">p</span><span class="ot"> class</span><span class="op">=</span><span class="st">"figure-caption"</span><span class="dt">&gt;&lt;</span><span class="kw">em</span><span class="dt">&gt;</span>Figure 1. Convergence of full ADAPT-VQE (blue) and LLM-guided ADAPT-VQE (red dashed) for methane in STO-3G. Both reach the same converged energy. The CASCI reference (green dashed) and HF baseline (grey dashed) are shown for comparison.<span class="dt">&lt;/</span><span class="kw">em</span><span class="dt">&gt;</span></span>
-<span id="cb9-378"><a href="#cb9-378" aria-hidden="true" tabindex="-1"></a><span class="dt">&lt;/</span><span class="kw">p</span><span class="dt">&gt;</span></span>
-<span id="cb9-379"><a href="#cb9-379" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-380"><a href="#cb9-380" aria-hidden="true" tabindex="-1"></a>The result holds because the LLM correctly applied Brillouin's theorem to rule out single excitations as first-iteration candidates in a closed-shell singlet calculation. For well-understood systems, chemical reasoning can safely constrain the search space without loss of accuracy. For larger and more strongly correlated molecules, such as transition metal complexes, systems near bond-breaking geometries, and cases where DFT fails, the dominant correlation effects are less obvious, and the LLM would need feedback from simulation to know when its reasoning was wrong. This is precisely the architecture that Hiverge's Hive implements at scale: LLM agents propose circuit modifications, GPU-accelerated simulation via CUDA-Q evaluates their fitness, and evolutionary selection retains the best. In its collaboration with Quantinuum on quantum chemistry problems, this loop rediscovered MP2 as an emergent strategy without being instructed to look for it. </span>
-<span id="cb9-381"><a href="#cb9-381" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-382"><a href="#cb9-382" aria-hidden="true" tabindex="-1"></a>---</span>
-<span id="cb9-383"><a href="#cb9-383" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-384"><a href="#cb9-384" aria-hidden="true" tabindex="-1"></a><span class="co">[</span><span class="ot">← Previous: Chemically Aware VQE</span><span class="co">](refrigerant-chemistry-adapt-vqe.html)</span></span>
+<span id="cb9-361"><a href="#cb9-361" aria-hidden="true" tabindex="-1"></a><span class="dt">&lt;</span><span class="kw">div</span><span class="ot"> style</span><span class="op">=</span><span class="st">"display: flex; justify-content: center; margin: 1.5rem 0;"</span><span class="dt">&gt;</span></span>
+<span id="cb9-362"><a href="#cb9-362" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&lt;</span><span class="kw">img</span><span class="ot"> src</span><span class="op">=</span><span class="st">"figures/llm-guided-adapt-vqe/adapt_vqe_llm_comparison.png"</span></span>
+<span id="cb9-363"><a href="#cb9-363" aria-hidden="true" tabindex="-1"></a><span class="ot">       alt</span><span class="op">=</span><span class="st">"Full ADAPT-VQE vs LLM-guided ADAPT-VQE convergence"</span></span>
+<span id="cb9-364"><a href="#cb9-364" aria-hidden="true" tabindex="-1"></a><span class="ot">       style</span><span class="op">=</span><span class="st">"width: 65%"</span><span class="dt">&gt;</span></span>
+<span id="cb9-365"><a href="#cb9-365" aria-hidden="true" tabindex="-1"></a><span class="dt">&lt;/</span><span class="kw">div</span><span class="dt">&gt;</span></span>
+<span id="cb9-366"><a href="#cb9-366" aria-hidden="true" tabindex="-1"></a><span class="dt">&lt;</span><span class="kw">p</span><span class="ot"> class</span><span class="op">=</span><span class="st">"figure-caption"</span><span class="dt">&gt;&lt;</span><span class="kw">em</span><span class="dt">&gt;</span>Figure 1. Convergence of full ADAPT-VQE (blue) and LLM-guided ADAPT-VQE (red dashed) for methane in STO-3G. Both reach the same converged energy. The CASCI reference (green dashed) and HF baseline (grey dashed) are shown for comparison.<span class="dt">&lt;/</span><span class="kw">em</span><span class="dt">&gt;</span></span>
+<span id="cb9-367"><a href="#cb9-367" aria-hidden="true" tabindex="-1"></a><span class="dt">&lt;/</span><span class="kw">p</span><span class="dt">&gt;</span></span>
+<span id="cb9-368"><a href="#cb9-368" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-369"><a href="#cb9-369" aria-hidden="true" tabindex="-1"></a>The result holds because the LLM correctly applied Brillouin's theorem to rule out single excitations as first-iteration candidates in a closed-shell singlet calculation. For well-understood systems, chemical reasoning can safely constrain the search space without loss of accuracy. For larger and more strongly correlated molecules, such as transition metal complexes, systems near bond-breaking geometries, and cases where DFT fails, the dominant correlation effects are less obvious, and the LLM would need feedback from simulation to know when its reasoning was wrong. This is precisely the architecture that Hiverge's Hive implements at scale: LLM agents propose circuit modifications, GPU-accelerated simulation via CUDA-Q evaluates their fitness, and evolutionary selection retains the best. In its collaboration with Quantinuum on quantum chemistry problems, this loop rediscovered MP2 as an emergent strategy without being instructed to look for it. </span>
+<span id="cb9-370"><a href="#cb9-370" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-371"><a href="#cb9-371" aria-hidden="true" tabindex="-1"></a>---</span>
+<span id="cb9-372"><a href="#cb9-372" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-373"><a href="#cb9-373" aria-hidden="true" tabindex="-1"></a><span class="co">[</span><span class="ot">← Previous: Chemically Aware VQE</span><span class="co">](refrigerant-chemistry-adapt-vqe.html)</span></span>
 </code></pre></div><button title="Copy to Clipboard" class="code-copy-button" data-in-quarto-modal=""><i class="bi"></i></button></div>
 </div></div></div></div></div>
 </div> <!-- /content -->
