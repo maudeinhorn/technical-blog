@@ -61,7 +61,7 @@ To run this notebook locally, install dependencies with:
 :::
 
 ```bash
-pip install cudaq cudaq-solvers py3Dmol
+pip install cudaq cudaq-solvers py3Dmol numpy pandas matplotlib
 ```
 
 ```{python}

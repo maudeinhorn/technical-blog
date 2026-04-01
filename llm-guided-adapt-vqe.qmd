@@ -48,7 +48,7 @@ To run this notebook, install dependencies with:
 :::
 
 ```bash
-pip install cudaq cudaq-solvers anthropic
+pip install cudaq cudaq-solvers numpy pandas matplotlib anthropic
 ```
 
 ```{python}
